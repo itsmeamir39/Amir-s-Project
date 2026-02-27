@@ -11,7 +11,9 @@
 export function calculateFine(
   dueDate: Date,
   finePerDay: number,
-  maxFineAmount?: number
+  maxFineAmount?: number,
+  gracePeriodDays?: number,
+  bookPriceCap?: number
 ): number {
   const today = new Date();
 
@@ -35,12 +37,14 @@ export function calculateFine(
     return 0;
   }
 
-  const rawFine = daysLate * finePerDay;
+  const grace = typeof gracePeriodDays === 'number' && gracePeriodDays > 0 ? gracePeriodDays : 0;
+  const effectiveDaysLate = Math.max(0, daysLate - grace);
+  const rawFine = effectiveDaysLate * finePerDay;
 
-  if (typeof maxFineAmount === 'number' && maxFineAmount >= 0) {
-    return Math.min(rawFine, maxFineAmount);
-  }
+  const caps: number[] = [];
+  if (typeof maxFineAmount === 'number' && maxFineAmount >= 0) caps.push(maxFineAmount);
+  if (typeof bookPriceCap === 'number' && bookPriceCap >= 0) caps.push(bookPriceCap);
+  if (caps.length > 0) return Math.min(rawFine, Math.min(...caps));
 
   return rawFine;
 }
-

@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Clock } from 'lucide-react';
 
 type BiblioWithItems = {
   id: number;
@@ -121,6 +122,20 @@ export default function PatronCatalogPage() {
         throw new Error('You must be logged in to reserve a book.');
       }
 
+      const { data: finesData, error: finesError } = await supabase
+        .from('fines')
+        .select('amount, status')
+        .eq('status', 'Unpaid');
+      if (finesError) throw finesError;
+      const totalUnpaid = (finesData ?? []).reduce(
+        (sum: number, f: any) => sum + (f.amount ?? 0),
+        0
+      );
+      if (totalUnpaid > 10) {
+        setReserveError('Your account is locked due to unpaid fines over $10.');
+        return;
+      }
+
       // Fetch the patron's role
       const { data: userRecord, error: userRecordError } = await supabase
         .from('users')
@@ -184,6 +199,30 @@ export default function PatronCatalogPage() {
       );
     } finally {
       setIsReserving(false);
+    }
+  };
+
+  const handlePlaceHold = async () => {
+    if (!selected) return;
+    setReserveError(null);
+    setReserveSuccess(null);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('You must be logged in to place a hold.');
+      }
+      const { error } = await supabase.from('holds').insert({
+        user_id: user.id,
+        biblio_id: selected.id,
+        status: 'pending',
+      });
+      if (error) throw error;
+      setReserveSuccess('Hold placed successfully. We will notify you when ready.');
+    } catch (e: any) {
+      setReserveError(e?.message ?? 'Unable to place hold at this time.');
     }
   };
 
@@ -353,6 +392,16 @@ export default function PatronCatalogPage() {
                   circulation rules.
                 </p>
                 <div className="flex gap-2">
+                  {!isAvailable(selected) && (
+                    <Button
+                      type="button"
+                      className="bg-slate-900 text-xs font-semibold text-slate-50 hover:bg-black inline-flex items-center gap-1"
+                      onClick={handlePlaceHold}
+                    >
+                      <Clock className="h-3 w-3" />
+                      Place Hold
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="outline"

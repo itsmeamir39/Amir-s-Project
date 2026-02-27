@@ -27,6 +27,8 @@ type CirculationRuleRow = {
   borrow_limit: number | null;
   fine_amount_per_day: number | null;
   renewal_limit: number | null;
+  grace_period_days: number | null;
+  max_fine_amount: number | null;
 };
 
 type GlobalSettings = {
@@ -85,57 +87,48 @@ export default function AdminSettingsPage() {
   React.useEffect(() => {
     const load = async () => {
       try {
-        // Circulation rules
-        const { data: rulesData, error: rulesError } = await supabase
-          .from('circulation_rules')
-          .select(
-            'id, role, loan_period_days, borrow_limit, fine_amount_per_day, renewal_limit'
-          );
+        const [
+          rulesResp,
+          settingsResp,
+          logsResp,
+          finesResp,
+        ] = await Promise.all([
+          supabase
+            .from('circulation_rules')
+            .select(
+              'id, role, loan_period_days, borrow_limit, fine_amount_per_day, renewal_limit, grace_period_days, max_fine_amount'
+            ),
+          supabase
+            .from('global_settings')
+            .select('id, maintenance_mode, allow_self_registration')
+            .maybeSingle(),
+          supabase
+            .from('audit_logs')
+            .select('id, actor, action, details, created_at')
+            .order('created_at', { ascending: false })
+            .limit(20),
+          supabase.from('fines').select('amount, status'),
+        ]);
 
-        if (rulesError) throw rulesError;
-
+        if (rulesResp.error) throw rulesResp.error;
         setRules(
-          ensureDefaultRoles((rulesData as CirculationRuleRow[]) ?? [])
+          ensureDefaultRoles((rulesResp.data as CirculationRuleRow[]) ?? [])
         );
 
-        // Global settings (assume a singleton row)
-        const { data: settingsData, error: settingsError } = await supabase
-          .from('global_settings')
-          .select('id, maintenance_mode, allow_self_registration')
-          .maybeSingle();
-
-        if (settingsError) throw settingsError;
-
+        if (settingsResp.error) throw settingsResp.error;
         setSettings(
-          settingsData
-            ? (settingsData as GlobalSettings)
-            : {
-                maintenance_mode: false,
-                allow_self_registration: true,
-              }
+          settingsResp.data
+            ? (settingsResp.data as GlobalSettings)
+            : { maintenance_mode: false, allow_self_registration: true }
         );
 
-        // Audit logs (latest 20)
-        const { data: logsData, error: logsError } = await supabase
-          .from('audit_logs')
-          .select('id, actor, action, details, created_at')
-          .order('created_at', { ascending: false })
-          .limit(20);
+        if (logsResp.error) throw logsResp.error;
+        setAuditLogs((logsResp.data as AuditLogRow[]) ?? []);
 
-        if (logsError) throw logsError;
-        setAuditLogs((logsData as AuditLogRow[]) ?? []);
-
-        // Fines overview
-        const { data: finesData, error: finesError } = await supabase
-          .from('fines')
-          .select('amount, status');
-
-        if (finesError) throw finesError;
-
-        const total = (finesData ?? [])
+        if (finesResp.error) throw finesResp.error;
+        const total = (finesResp.data ?? [])
           .filter((f: any) => f.status === 'Unpaid')
           .reduce((sum: number, f: any) => sum + (f.amount ?? 0), 0);
-
         setTotalUnpaidFines(total);
       } catch (e: any) {
         console.error(e);
@@ -213,6 +206,8 @@ export default function AdminSettingsPage() {
         borrow_limit: r.borrow_limit,
         fine_amount_per_day: r.fine_amount_per_day,
         renewal_limit: r.renewal_limit,
+        grace_period_days: r.grace_period_days,
+        max_fine_amount: r.max_fine_amount,
       }));
 
       const { error } = await supabase
@@ -383,6 +378,12 @@ export default function AdminSettingsPage() {
                             <TableHead className="text-xs text-slate-300">
                               Renewal limit
                             </TableHead>
+                          <TableHead className="text-xs text-slate-300">
+                            Grace period (days)
+                          </TableHead>
+                          <TableHead className="text-xs text-slate-300">
+                            Max fine ($)
+                          </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -451,6 +452,37 @@ export default function AdminSettingsPage() {
                                   className="h-8 w-24 bg-slate-950/60 border-slate-700/70 text-xs"
                                 />
                               </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={rule.grace_period_days ?? ''}
+                                onChange={(e) =>
+                                  updateRuleField(
+                                    rule.role,
+                                    'grace_period_days',
+                                    e.target.value
+                                  )
+                                }
+                                className="h-8 w-24 bg-slate-950/60 border-slate-700/70 text-xs"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                value={rule.max_fine_amount ?? ''}
+                                onChange={(e) =>
+                                  updateRuleField(
+                                    rule.role,
+                                    'max_fine_amount',
+                                    e.target.value
+                                  )
+                                }
+                                className="h-8 w-24 bg-slate-950/60 border-slate-700/70 text-xs"
+                              />
+                            </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>

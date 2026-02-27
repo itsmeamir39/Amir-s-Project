@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -148,6 +149,15 @@ export default function AdminSettingsPage() {
 
     load();
   }, [ensureDefaultRoles, supabase]);
+
+  React.useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => {
+      setLoading(false);
+      setLoadError('Loading is taking too long. Please refresh.');
+    }, 10000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   const updateRuleField = (
     role: string,

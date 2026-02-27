@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -84,6 +85,15 @@ export default function PatronCatalogPage() {
     return () => clearTimeout(handler);
   }, [searchTerm, supabase]);
 
+  React.useEffect(() => {
+    if (!isSearching) return;
+    const t = setTimeout(() => {
+      setIsSearching(false);
+      setSearchError('Search is taking too long. Please try again.');
+    }, 10000);
+    return () => clearTimeout(t);
+  }, [isSearching]);
+
   const isAvailable = (biblio: BiblioWithItems) =>
     biblio.items?.some((item) => item.status === 'Available');
 
@@ -140,7 +150,7 @@ export default function PatronCatalogPage() {
       // Fetch reserve limit from circulation_rules based on role
       const { data: rule, error: ruleError } = await supabase
         .from('circulation_rules')
-        .select('reserve_limit')
+        .select('renewal_limit')
         .eq('role', role)
         .maybeSingle();
 
@@ -148,7 +158,7 @@ export default function PatronCatalogPage() {
         throw ruleError;
       }
 
-      const reserveLimit = rule?.reserve_limit ?? 3;
+      const reserveLimit = (rule as any)?.renewal_limit ?? 3;
 
       if (currentReservations >= reserveLimit) {
         setReserveError('You have reached your reservation limit.');

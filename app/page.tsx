@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
 import Image from 'next/image';
@@ -18,7 +19,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/database.types';
 
 const loginSchema = z.object({
@@ -37,7 +37,6 @@ type UserRole = 'Admin' | 'Librarian' | 'Patron';
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient<any>();
 
   const {
     register,
@@ -56,22 +55,43 @@ export default function LoginPage() {
   const onSubmit = async (values: LoginValues) => {
     setFormError(null);
 
-    const { data: authData, error: authError } =
-      await supabase.auth.signInWithPassword({
+    const supabase = createClientComponentClient<any>();
+
+    const timeout = (ms: number) =>
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Sign-in is taking too long. Please try again.')), ms)
+      );
+
+    const { data: authData, error: authError } = await Promise.race([
+      supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
-      });
+      }),
+      timeout(10000),
+    ]).catch((e: any) => {
+      setFormError(e?.message ?? 'Sign-in failed. Please try again.');
+      return { data: { user: null }, error: e };
+    });
 
     if (authError || !authData.user) {
       setFormError(authError?.message ?? 'Invalid email or password.');
       return;
     }
 
-    const { data: userRecord, error: userError } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', authData.user.id)
-      .single();
+    let userRecord: { role?: string } | null = null;
+    let userError: any = null;
+    try {
+      const resp = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single();
+      userRecord = resp.data as any;
+      userError = resp.error;
+    } catch (e: any) {
+      userError = e;
+      userRecord = null;
+    }
 
     if (userError || !userRecord?.role) {
       setFormError('Your account is missing a role. Please contact support.');
@@ -99,7 +119,8 @@ export default function LoginPage() {
           src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80"
           alt="Cozy library with bookshelves"
           fill
-          priority
+          placeholder="blur"
+          blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAoMBgP1r3kUAAAAASUVORK5CYII="
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-emerald-700/60" />

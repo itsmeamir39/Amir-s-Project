@@ -29,8 +29,7 @@ export default function AdminPage() {
   const supabase = createClientComponentClient<any>();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
-  const [books, setBooks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
 
   // Recent activities data
   const recentActivities = [
@@ -70,6 +69,20 @@ export default function AdminPage() {
       dateAdded: 'Jan 10, 2024'
     }
   ];
+
+  const memberData = [
+    { id: 1, name: "Alice Johnson", email: "alice@example.com", role: "Patron", memberSince: "Jan 15, 2024", status: "Active", booksBorrowed: 3 },
+    { id: 2, name: "Bob Wilson", email: "bob@example.com", role: "Patron", memberSince: "Jan 10, 2024", status: "Active", booksBorrowed: 1 },
+    { id: 3, name: "Carol Davis", email: "carol@example.com", role: "Librarian", memberSince: "Dec 20, 2023", status: "Active", booksBorrowed: 0 },
+    { id: 4, name: "David Brown", email: "david@example.com", role: "Patron", memberSince: "Feb 01, 2024", status: "Inactive", booksBorrowed: 2 },
+    { id: 5, name: "Emma Martinez", email: "emma@example.com", role: "Patron", memberSince: "Feb 10, 2024", status: "Active", booksBorrowed: 4 },
+  ];
+
+  const filteredMembers = memberData.filter(member =>
+    member.name.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+    member.email.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+    member.role.toLowerCase().includes(memberSearchTerm.toLowerCase())
+  );
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -351,6 +364,8 @@ export default function AdminPage() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       placeholder="Search members..."
+                      value={memberSearchTerm}
+                      onChange={(e) => setMemberSearchTerm(e.target.value)}
                       className="pl-10 w-64"
                     />
                   </div>
@@ -371,19 +386,13 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[
-                        { id: 1, name: "Alice Johnson", email: "alice@example.com", role: "Patron", memberSince: "Jan 15, 2024", status: "Active", booksBorrowed: 3 },
-                        { id: 2, name: "Bob Wilson", email: "bob@example.com", role: "Patron", memberSince: "Jan 10, 2024", status: "Active", booksBorrowed: 1 },
-                        { id: 3, name: "Carol Davis", email: "carol@example.com", role: "Librarian", memberSince: "Dec 20, 2023", status: "Active", booksBorrowed: 0 },
-                        { id: 4, name: "David Brown", email: "david@example.com", role: "Patron", memberSince: "Feb 01, 2024", status: "Inactive", booksBorrowed: 2 },
-                        { id: 5, name: "Emma Martinez", email: "emma@example.com", role: "Patron", memberSince: "Feb 10, 2024", status: "Active", booksBorrowed: 4 },
-                      ].map((member) => (
+                      {filteredMembers.map((member) => (
                         <tr key={member.id} className="border-b border-border hover:bg-muted/50">
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
                                 <span className="text-xs font-medium text-white">
-                                  {member.name.split(' ').map(n => n[0]).join('')}
+                                  {member.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
                                 </span>
                               </div>
                               <div>

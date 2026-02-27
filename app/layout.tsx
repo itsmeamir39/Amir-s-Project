@@ -23,17 +23,7 @@ export default function RootLayout({
               <a href="/" className="flex items-center gap-2">
                 <span className="text-xl font-bold text-orange-600">BookHub</span>
               </a>
-              <nav className="hidden md:flex items-center gap-6 text-sm">
-                <a href="/dashboard/search" className="hover:text-orange-600">Shop</a>
-                <a href="#" className="hover:text-orange-600">Categories</a>
-                <a href="#" className="hover:text-orange-600">Offers</a>
-              </nav>
-              <div className="flex items-center gap-3">
-                <a href="/dashboard/search" className="rounded-md bg-orange-600 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-700">Search Books</a>
-                <a href="/admin" className="rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-200">Admin</a>
-                <a href="/librarian/add-book" className="rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-200">Add Book</a>
-              </div>
-            </div>
+                          </div>
           </div>
         </header>
         <main>{children}</main>

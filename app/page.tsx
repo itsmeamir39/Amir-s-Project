@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Clock, Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +53,7 @@ export default function LoginPage() {
   });
 
   const [formError, setFormError] = React.useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const onSubmit = async (values: LoginValues) => {
     setFormError(null);
@@ -201,14 +203,27 @@ export default function LoginPage() {
                       Reset password
                     </a>
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Enter your password"
-                    className="bg-slate-900/60 border-slate-700/60 text-slate-50 placeholder:text-slate-500 focus-visible:ring-emerald-500"
-                    {...register('password')}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
+                      className="bg-slate-900/60 border-slate-700/60 text-slate-50 placeholder:text-slate-500 focus-visible:ring-emerald-500 pr-10"
+                      {...register('password')}
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                   {errors.password && (
                     <p className="text-xs text-rose-400">
                       {errors.password.message}

@@ -58,6 +58,12 @@ export default function LoginPage() {
   const onSubmit = async (values: LoginValues) => {
     setFormError(null);
 
+    // TEMPORARY BYPASS FOR ADMIN CREATION - REMOVE AFTER SETUP
+    if (values.email === 'admin@knowledgenest.com' && values.password === 'temp123') {
+      router.push('/admin');
+      return;
+    }
+
     const supabase = createClientComponentClient<any>();
 
     const timeout = (ms: number) =>
@@ -131,11 +137,10 @@ export default function LoginPage() {
         <div className="relative z-10 flex h-full items-center px-16 py-10">
           <div className="max-w-xl space-y-6">
             <p className="inline-flex items-center rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-200 ring-1 ring-inset ring-emerald-400/40">
-              KnowledgeNest
+              Welcome to,
             </p>
             <h1 className="text-4xl font-semibold tracking-tight text-slate-50 lg:text-5xl">
-              Welcome,
-            
+              KnowledgeNest
             </h1>
             <p className="text-base text-slate-200/80">
               Access your digital library workspace securely and continue managing knowledge with ease.

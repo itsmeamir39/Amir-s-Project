@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { StatsCard } from '@/components/StatsCard';
 import { 
   BookOpen, 
@@ -30,6 +31,14 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [memberSearchTerm, setMemberSearchTerm] = useState('');
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+  const [newMember, setNewMember] = useState({
+    name: '',
+    email: '',
+    role: 'Patron',
+    memberSince: new Date().toISOString().split('T')[0],
+    status: 'Active'
+  });
 
   // Recent activities data
   const recentActivities = [
@@ -83,6 +92,26 @@ export default function AdminPage() {
     member.email.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
     member.role.toLowerCase().includes(memberSearchTerm.toLowerCase())
   );
+
+  const handleAddMember = () => {
+    // Add new member to the array (in real app, this would save to Supabase)
+    const newMemberData = {
+      id: memberData.length + 1,
+      ...newMember,
+      booksBorrowed: 0
+    };
+    memberData.push(newMemberData);
+    
+    // Reset form and close dialog
+    setNewMember({
+      name: '',
+      email: '',
+      role: 'Patron',
+      memberSince: new Date().toISOString().split('T')[0],
+      status: 'Active'
+    });
+    setShowAddMemberDialog(false);
+  };
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -306,7 +335,10 @@ export default function AdminPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-semibold text-foreground">Members</h1>
-              <Button className="bg-accent hover:bg-accent/90 text-white">
+              <Button 
+                onClick={() => setShowAddMemberDialog(true)}
+                className="bg-accent hover:bg-accent/90 text-white"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Member
               </Button>
@@ -518,6 +550,66 @@ export default function AdminPage() {
           {renderPage()}
         </div>
       </main>
+
+      {/* Add Member Dialog */}
+      {showAddMemberDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Add New Member</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={newMember.name}
+                  onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                  placeholder="Enter member name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newMember.email}
+                  onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <select
+                  id="role"
+                  value={newMember.role}
+                  onChange={(e) => setNewMember({...newMember, role: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="Patron">Patron</option>
+                  <option value="Librarian">Librarian</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAddMemberDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAddMember}
+                  className="flex-1 bg-accent hover:bg-accent/90 text-white"
+                >
+                  Add Member
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

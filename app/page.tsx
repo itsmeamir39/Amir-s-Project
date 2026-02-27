@@ -131,24 +131,21 @@ export default function LoginPage() {
         <div className="relative z-10 flex h-full items-center px-16 py-10">
           <div className="max-w-xl space-y-6">
             <p className="inline-flex items-center rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-200 ring-1 ring-inset ring-emerald-400/40">
-              Modern Library Management
+              KnowledgeNest
             </p>
             <h1 className="text-4xl font-semibold tracking-tight text-slate-50 lg:text-5xl">
-              Welcome back to your
-              <span className="block bg-gradient-to-r from-emerald-300 to-sky-300 bg-clip-text text-transparent">
-                digital library desk
-              </span>
+              Welcome,
+            
             </h1>
             <p className="text-base text-slate-200/80">
-              Manage collections, track loans, and serve patrons from a single,
-              intuitive workspace designed for modern libraries.
+              Access your digital library workspace securely and continue managing knowledge with ease.
             </p>
             <div className="flex items-center gap-4 text-sm text-slate-200/80">
               <div className="flex flex-col">
                 <span className="font-medium text-emerald-200">
-                  Role-aware access
+                  Your Library. Simplified.
                 </span>
-                <span>Tailored dashboards for Admins, Librarians, and Patrons.</span>
+
               </div>
             </div>
           </div>
@@ -169,7 +166,7 @@ export default function LoginPage() {
 
           <Card className="border border-slate-200/10 bg-slate-900/40 text-slate-50 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-xl">Welcome back</CardTitle>
+              <CardTitle className="text-xl">Welcome,</CardTitle>
               <CardDescription className="text-slate-400">
                 Enter your credentials to continue.
               </CardDescription>
@@ -194,15 +191,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <a
-                      href="/reset-password"
-                      className="text-xs font-medium text-emerald-300 hover:text-emerald-200 hover:underline"
-                    >
-                      Reset password
-                    </a>
-                  </div>
+                  <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"

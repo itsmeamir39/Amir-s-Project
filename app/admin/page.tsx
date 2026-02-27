@@ -290,9 +290,149 @@ export default function AdminPage() {
         );
       case "members":
         return (
-          <div>
-            <h1 className="text-3xl font-semibold text-foreground mb-1">Members</h1>
-            <p className="text-muted-foreground">Member management coming soon...</p>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-semibold text-foreground">Members</h1>
+              <Button className="bg-accent hover:bg-accent/90 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Member
+              </Button>
+            </div>
+
+            {/* Member Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Members</p>
+                      <p className="text-2xl font-semibold text-foreground">1,234</p>
+                    </div>
+                    <div className="w-12 h-12 bg-accent p-3 rounded-lg">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Active This Month</p>
+                      <p className="text-2xl font-semibold text-foreground">89</p>
+                    </div>
+                    <div className="w-12 h-12 bg-emerald-500 p-3 rounded-lg">
+                      <TrendingUp className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">New This Week</p>
+                      <p className="text-2xl font-semibold text-foreground">12</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-500 p-3 rounded-lg">
+                      <Calendar className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Members Table */}
+            <Card className="border-border">
+              <CardHeader className="border-b border-border">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">All Members</CardTitle>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search members..."
+                      className="pl-10 w-64"
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Name</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Email</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Role</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Member Since</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Status</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Books Borrowed</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { id: 1, name: "Alice Johnson", email: "alice@example.com", role: "Patron", memberSince: "Jan 15, 2024", status: "Active", booksBorrowed: 3 },
+                        { id: 2, name: "Bob Wilson", email: "bob@example.com", role: "Patron", memberSince: "Jan 10, 2024", status: "Active", booksBorrowed: 1 },
+                        { id: 3, name: "Carol Davis", email: "carol@example.com", role: "Librarian", memberSince: "Dec 20, 2023", status: "Active", booksBorrowed: 0 },
+                        { id: 4, name: "David Brown", email: "david@example.com", role: "Patron", memberSince: "Feb 01, 2024", status: "Inactive", booksBorrowed: 2 },
+                        { id: 5, name: "Emma Martinez", email: "emma@example.com", role: "Patron", memberSince: "Feb 10, 2024", status: "Active", booksBorrowed: 4 },
+                      ].map((member) => (
+                        <tr key={member.id} className="border-b border-border hover:bg-muted/50">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                                <span className="text-xs font-medium text-white">
+                                  {member.name.split(' ').map(n => n[0]).join('')}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{member.name}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">{member.email}</td>
+                          <td className="py-3 px-4">
+                            <Badge
+                              className={
+                                member.role === 'Librarian'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }
+                            >
+                              {member.role}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">{member.memberSince}</td>
+                          <td className="py-3 px-4">
+                            <Badge
+                              className={
+                                member.status === 'Active'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-red-100 text-red-800'
+                              }
+                            >
+                              {member.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">{member.booksBorrowed}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" className="text-xs">
+                                View
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                Edit
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
       case "reports":

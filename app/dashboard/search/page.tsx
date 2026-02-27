@@ -178,7 +178,7 @@ export default function PatronCatalogPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100 px-4 py-10 text-slate-900 sm:px-6 lg:px-10">
+    <main className="min-h-screen bg-gradient-to-b from-white via-white to-orange-50 px-4 py-10 text-slate-900 sm:px-6 lg:px-10">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-8">
         {/* Header */}
         <section className="text-center space-y-3">
@@ -196,9 +196,9 @@ export default function PatronCatalogPage() {
 
         {/* Search bar */}
         <section className="w-full max-w-2xl">
-          <div className="relative rounded-2xl bg-white/80 p-1 shadow-[0_22px_60px_rgba(15,23,42,0.14)] ring-1 ring-slate-200 backdrop-blur-xl">
+          <div className="relative rounded-2xl bg-white/90 p-1 shadow-[0_22px_60px_rgba(15,23,42,0.14)] ring-1 ring-orange-200 backdrop-blur-xl">
             <div className="flex items-center gap-3 px-4 py-3">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-slate-50">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-600 text-xs font-semibold text-white">
                 ⌕
               </span>
               <Input
@@ -208,7 +208,7 @@ export default function PatronCatalogPage() {
                 className="border-0 bg-transparent px-0 text-sm shadow-none outline-none ring-0 placeholder:text-slate-400 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               {isSearching && (
-                <span className="text-xs text-slate-400">Searching…</span>
+                <span className="text-xs text-orange-600">Searching…</span>
               )}
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function PatronCatalogPage() {
                     onClick={() => handleCardClick(biblio)}
                     className="group text-left"
                   >
-                    <Card className="flex h-full flex-col overflow-hidden border-0 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.12)] transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(15,23,42,0.18)]">
+                    <Card className="flex h-full flex-col overflow-hidden border border-orange-100 bg-white transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(15,23,42,0.18)]">
                       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -251,8 +251,8 @@ export default function PatronCatalogPage() {
                           <Badge
                             className={
                               available
-                                ? 'border-0 bg-emerald-500/95 text-[11px] font-medium text-emerald-50 shadow-sm'
-                                : 'border-0 bg-rose-500/95 text-[11px] font-medium text-rose-50 shadow-sm'
+                                ? 'border-0 bg-emerald-100 text-[11px] font-medium text-emerald-700'
+                                : 'border-0 bg-slate-200 text-[11px] font-medium text-slate-700'
                             }
                           >
                             {available ? 'Available' : 'Out of stock'}
@@ -284,10 +284,10 @@ export default function PatronCatalogPage() {
 
       {/* Detail dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg border-0 bg-white/95 p-0 shadow-[0_24px_80px_rgba(15,23,42,0.35)] backdrop-blur-2xl">
+        <DialogContent className="max-w-lg border border-orange-100 bg-white p-0 shadow-[0_24px_80px_rgba(15,23,42,0.25)]">
           {selected && (
             <>
-              <DialogHeader className="border-b border-slate-100 px-6 py-4">
+              <DialogHeader className="border-b border-orange-100 px-6 py-4">
                 <DialogTitle className="text-base font-semibold text-slate-900">
                   {selected.title}
                 </DialogTitle>
@@ -312,8 +312,8 @@ export default function PatronCatalogPage() {
                   <Badge
                     className={
                       isAvailable(selected)
-                        ? 'border-0 bg-emerald-500/95 text-[11px] font-medium text-emerald-50'
-                        : 'border-0 bg-rose-500/95 text-[11px] font-medium text-rose-50'
+                        ? 'border-0 bg-emerald-100 text-[11px] font-medium text-emerald-700'
+                        : 'border-0 bg-slate-200 text-[11px] font-medium text-slate-700'
                     }
                   >
                     {isAvailable(selected) ? 'Available' : 'Out of stock'}
@@ -337,7 +337,7 @@ export default function PatronCatalogPage() {
                 </p>
               )}
 
-              <DialogFooter className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 px-6 py-4">
+              <DialogFooter className="mt-4 flex items-center justify-between gap-2 border-t border-orange-100 px-6 py-4">
                 <p className="text-[11px] text-slate-400">
                   Reservations are held according to your library&apos;s
                   circulation rules.
@@ -346,14 +346,14 @@ export default function PatronCatalogPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-slate-200 bg-white text-xs text-slate-700 hover:bg-slate-100"
+                    className="border-orange-200 bg-white text-xs text-slate-700 hover:bg-orange-50"
                     onClick={() => setIsDialogOpen(false)}
                   >
                     Close
                   </Button>
                   <Button
                     type="button"
-                    className="bg-slate-900 text-xs font-semibold text-slate-50 hover:bg-black"
+                    className="bg-orange-600 text-xs font-semibold text-white hover:bg-orange-700"
                     disabled={isReserving || !isAvailable(selected)}
                     onClick={handleReserve}
                   >

@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/database.types';
 
 const loginSchema = z.object({

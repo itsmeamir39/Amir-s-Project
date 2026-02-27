@@ -125,6 +125,7 @@ export default function PatronCatalogPage() {
       const { data: finesData, error: finesError } = await supabase
         .from('fines')
         .select('amount, status')
+        .eq('user_id', user.id)
         .eq('status', 'Unpaid');
       if (finesError) throw finesError;
       const totalUnpaid = (finesData ?? []).reduce(

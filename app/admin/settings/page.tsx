@@ -77,6 +77,8 @@ export default function AdminSettingsPage() {
             borrow_limit: 5,
             fine_amount_per_day: 0.25,
             renewal_limit: 2,
+            grace_period_days: 2,
+            max_fine_amount: 50,
           }
         );
       });

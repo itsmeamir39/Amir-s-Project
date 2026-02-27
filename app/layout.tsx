@@ -3,6 +3,9 @@ import React from 'react';
 export const metadata = {
   title: 'Library Management System',
   description: 'Manage your library books and members',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

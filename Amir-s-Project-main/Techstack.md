@@ -36,6 +36,10 @@
   - /api/admin/settings
   - /api/admin/users
   - /api/librarian/books
+  - /api/patron/reservations
+  - /api/patron/loans/renew
+  - /api/patron/loans/return
+  - /api/patron/suggestions
   - /api/payments/checkout
   - /api/payments/webhook
 

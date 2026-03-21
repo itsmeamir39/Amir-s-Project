@@ -54,12 +54,16 @@ export async function placeHold(
   userId: string,
   biblioId: number
 ) {
-  const { error } = await client.from('holds').insert({
-    user_id: userId,
-    biblio_id: biblioId,
-    status: 'pending',
+  const response = await fetch('/api/patron/reservations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ biblioId }),
   });
-  if (error) throw new Error(error.message);
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error((payload as { error?: string }).error ?? 'Failed to place hold.');
+  }
 }
 
 /**
@@ -80,16 +84,16 @@ export async function reserveIfAllowed(
   userId: string,
   biblioId: number
 ) {
-  // Validate that reservation is allowed per circulation rules
-  await validateReservationAllowed(client, userId);
-
-  // Create hold record after reservation checks pass
-  const { error: insertError } = await client.from('holds').insert({
-    user_id: userId,
-    biblio_id: biblioId,
-    status: "pending",
+  const response = await fetch('/api/patron/reservations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ biblioId }),
   });
-  if (insertError) throw new Error(insertError.message);
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error((payload as { error?: string }).error ?? 'Failed to place reservation.');
+  }
 }
 
 /**
@@ -139,13 +143,15 @@ export async function cancelPendingHold(
   userId: string,
   holdId: number
 ) {
-  const { error } = await client
-    .from('holds')
-    .update({ status: 'cancelled' })
-    .eq('id', holdId)
-    .eq('user_id', userId)
-    .eq('status', 'pending');
+  const response = await fetch('/api/patron/reservations', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ holdId }),
+  });
 
-  if (error) throw new Error(error.message);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error((payload as { error?: string }).error ?? 'Failed to cancel reservation.');
+  }
 }
 

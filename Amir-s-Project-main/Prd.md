@@ -20,13 +20,16 @@ A role-based web application for Admin, Librarian, and Patron users to manage ca
   - password recovery/update mode in login flow
 - Catalog and circulation:
   - search by title/author/isbn
-  - reservation holds with circulation-rule validation
-  - current loans, renewal request flow, return status handling
+  - reservation holds with server-side circulation-rule validation
+  - current loans, server-routed renewal flow, return status handling
 - Financials:
   - fine visibility and totals
   - checkout endpoint to initiate payment
   - signed webhook endpoint to finalize payment and mark fines as paid
   - idempotent webhook processing via event IDs in audit logs
+- Patron API boundary:
+  - suggestions submit/list via role-gated API routes
+  - reservation create/cancel via role-gated API routes
 - Admin settings:
   - read/update circulation_rules and global_settings
   - admin users API for role records

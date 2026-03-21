@@ -92,7 +92,19 @@ Use this checklist after applying migrations.
 1. `/api/admin/settings` works for Admin; rejects Librarian/Patron.
 2. `/api/admin/users` works for Admin; rejects Librarian/Patron.
 3. `/api/librarian/books` works for Librarian/Admin; rejects Patron.
-4. `/api/payments/webhook`:
+4. `/api/patron/reservations`:
+   - Patron can create pending holds for own user only.
+   - Patron can cancel only own pending holds.
+   - Reservation limit and unpaid fine threshold are enforced server-side.
+5. `/api/patron/loans/renew`:
+   - Patron can renew only own `CheckedOut` loans.
+   - Renewal limit is enforced server-side.
+6. `/api/patron/loans/return`:
+   - Patron can return only own loans.
+   - Staff can return loans for operational workflows.
+7. `/api/patron/suggestions`:
+   - Patron can submit and list only own suggestions.
+8. `/api/payments/webhook`:
    - Patron can update own fine.
    - Patron cannot update another user's fine.
    - Audit log insert succeeds with `admin_id` set to patron id.

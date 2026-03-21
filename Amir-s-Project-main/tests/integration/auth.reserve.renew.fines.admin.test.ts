@@ -56,66 +56,27 @@ describe("integration journeys", () => {
   });
 
   it("reserve: inserts hold when user is eligible", async () => {
-    const client: any = {
-      from: vi.fn((table: string) => {
-        if (table === "fines") return makeBuilder({ data: [{ amount: 2 }], error: null });
-        if (table === "users") return makeBuilder({ data: { role: "Patron" }, error: null });
-        if (table === "circulation_rules") {
-          return makeBuilder({
-            data: {
-              role: "Patron",
-              borrow_limit: 5,
-              loan_period_days: 14,
-              renewal_limit: 2,
-              fine_amount_per_day: 0.25,
-              max_fine_amount: 25,
-              grace_period_days: 2,
-            },
-            error: null,
-          });
-        }
-        if (table === "holds") {
-          const holdsBuilder = makeBuilder({ data: [{ id: 1 }], error: null });
-          holdsBuilder.insert = vi.fn(async () => ({ data: null, error: null }));
-          return holdsBuilder;
-        }
-        return makeBuilder({ data: null, error: null });
-      }),
-    };
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ ok: true }),
+    }));
 
-    await expect(reserveIfAllowed(client, "u-1", 10)).resolves.toBeUndefined();
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+
+    await expect(reserveIfAllowed({} as any, "u-1", 10)).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it("renew: extends due date and increments renewals", async () => {
-    const client: any = {
-      from: vi.fn((table: string) => {
-        if (table === "users") return makeBuilder({ data: { role: "Patron" }, error: null });
-        if (table === "circulation_rules") {
-          return makeBuilder({
-            data: {
-              role: "Patron",
-              borrow_limit: 5,
-              loan_period_days: 14,
-              renewal_limit: 3,
-              fine_amount_per_day: 0.25,
-              max_fine_amount: 25,
-              grace_period_days: 2,
-            },
-            error: null,
-          });
-        }
-        if (table === "loans") {
-          const builder = makeBuilder({ data: null, error: null });
-          builder.update = vi.fn(() => builder);
-          builder.eq = vi.fn(async () => ({ data: null, error: null }));
-          return builder;
-        }
-        return makeBuilder({ data: null, error: null });
-      }),
-    };
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ ok: true, due_date: new Date().toISOString() }),
+    }));
+
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
 
     await expect(
-      renewLoan(client, "u-1", {
+      renewLoan({} as any, "u-1", {
         id: 11,
         user_id: "u-1",
         biblio_id: 22,
@@ -125,6 +86,7 @@ describe("integration journeys", () => {
         status: "CheckedOut",
       })
     ).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it("pay: sends checkout request and parses success", async () => {

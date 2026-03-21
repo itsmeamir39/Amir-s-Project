@@ -6,11 +6,6 @@
 
 import type { TypedSupabaseClient } from '@/lib/supabase';
 import type { Loan } from '@/types/library';
-import {
-  getCirculationRulesByRole,
-  validateRenewalAllowed,
-  calculateNewDueDate,
-} from './circulationRules';
 
 /**
  * Get all current active loans for a user
@@ -50,36 +45,16 @@ export async function renewLoan(
   userId: string,
   loan: Loan
 ) {
-  // Validate that renewal is allowed per circulation rules
-  const isRenewalAllowed = await validateRenewalAllowed(client, userId, loan.renewals_used);
-  if (!isRenewalAllowed) {
-    throw new Error('Renewal limit reached for your account.');
+  const response = await fetch('/api/patron/loans/renew', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ loanId: loan.id }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error((payload as { error?: string }).error ?? 'Failed to renew loan.');
   }
-
-  // Get user's circulation rules to calculate new due date
-  const { data: userRecord, error: userRecordError } = await client
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .maybeSingle();
-  if (userRecordError) throw new Error(userRecordError.message);
-
-  const role = userRecord?.role ?? 'Patron';
-  const rule = await getCirculationRulesByRole(client, role);
-
-  // Calculate new due date
-  const currentDue = new Date(loan.due_date);
-  const newDueDate = calculateNewDueDate(currentDue, rule.loan_period_days);
-
-  // Update the loan in database
-  const { error: updError } = await client
-    .from('loans')
-    .update({
-      due_date: newDueDate,
-      renewals_used: loan.renewals_used + 1,
-    })
-    .eq('id', loan.id);
-  if (updError) throw new Error(updError.message);
 }
 
 /**
@@ -92,10 +67,15 @@ export async function returnLoan(
   client: TypedSupabaseClient,
   loanId: number
 ) {
-  const { error } = await client
-    .from('loans')
-    .update({ status: 'Returned' })
-    .eq('id', loanId);
-  if (error) throw new Error(error.message);
+  const response = await fetch('/api/patron/loans/return', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ loanId }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error((payload as { error?: string }).error ?? 'Failed to return loan.');
+  }
 }
 

@@ -5,8 +5,6 @@ import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import PageHeader from "@/components/PageHeader";
 import { patronNav } from "@/lib/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
-import { getCurrentUser } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,15 +29,10 @@ export default function PatronSuggestionsPage() {
   const loadHistory = async () => {
     setLoadingHistory(true);
     try {
-      const supabase = createSupabaseBrowserClient();
-      const user = await getCurrentUser(supabase);
-      const { data, error } = await supabase
-        .from("suggestions")
-        .select("id, title, author, reason, status, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw new Error(error.message);
-      setHistory((data ?? []) as SuggestionRow[]);
+      const response = await fetch("/api/patron/suggestions", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Failed to load suggestion history.");
+      setHistory((payload.suggestions ?? []) as SuggestionRow[]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load suggestion history.");
     } finally {
@@ -55,16 +48,17 @@ export default function PatronSuggestionsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const supabase = createSupabaseBrowserClient();
-      const user = await getCurrentUser(supabase);
-      const { error } = await supabase.from("suggestions").insert({
-        user_id: user.id,
+      const response = await fetch("/api/patron/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
         title,
         author: author || null,
         reason: reason || null,
-        status: "pending",
+        }),
       });
-      if (error) throw new Error(error.message);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Failed to submit suggestion.");
       setTitle("");
       setAuthor("");
       setReason("");

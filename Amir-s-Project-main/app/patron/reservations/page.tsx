@@ -11,18 +11,12 @@ import { patronNav } from "@/lib/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { getCurrentUser } from "@/services/auth";
 import { getBibliosByIds } from "@/services/biblios";
-
-type ReservationRow = {
-  id: number;
-  biblio_id: number;
-  status?: string | null;
-  created_at?: string | null;
-};
+import { cancelPendingHold, getPendingHolds } from "@/services/catalog";
 
 export default function PatronReservationsPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<ReservationRow[]>([]);
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof getPendingHolds>>>([]);
   const [titles, setTitles] = useState<Record<number, { title: string; author: string | null }>>({});
 
   useEffect(() => {
@@ -35,21 +29,7 @@ export default function PatronReservationsPage() {
       setLoading(true);
       try {
         const user = await getCurrentUser(supabase);
-
-        const { data, error } = await supabase
-          .from("holds")
-          .select("id, biblio_id, status, created_at")
-          .eq("user_id", user.id)
-          .eq("status", "pending")
-          .order("created_at", { ascending: false });
-        if (error) throw new Error(error.message);
-
-        const r: ReservationRow[] = (data ?? []).map((d) => ({
-          id: d.id,
-          biblio_id: d.biblio_id,
-          status: d.status,
-          created_at: d.created_at,
-        }));
+        const r = await getPendingHolds(supabase, user.id);
 
         setRows(r);
         setTitles(await getBibliosByIds(supabase, r.map((x) => x.biblio_id)));
@@ -65,8 +45,8 @@ export default function PatronReservationsPage() {
   const cancelHold = async (id: number) => {
     if (!supabase) return;
     try {
-      const { error } = await supabase.from("holds").update({ status: "cancelled" }).eq("id", id);
-      if (error) throw new Error(error.message);
+      const user = await getCurrentUser(supabase);
+      await cancelPendingHold(supabase, user.id, id);
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast.success("Reservation cancelled.");
     } catch (err) {

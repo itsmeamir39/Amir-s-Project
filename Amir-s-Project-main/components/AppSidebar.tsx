@@ -1,9 +1,4 @@
-"use client";
-
 import { BookOpen } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { usePathname } from "next/navigation";
-
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -15,6 +10,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import type { LucideIcon } from "lucide-react";
 
 export interface SidebarNavItem {
   title: string;
@@ -30,41 +26,36 @@ interface AppSidebarProps {
 export function AppSidebar({ items, title }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const pathname = usePathname();
 
   return (
     <Sidebar collapsible="icon">
       <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
         <BookOpen className="h-6 w-6 text-sidebar-primary shrink-0" />
         {!collapsed && (
-          <span className="font-display font-bold text-sidebar-foreground text-lg truncate">{title}</span>
+          <span className="font-display font-bold text-sidebar-foreground text-lg truncate">
+            {title}
+          </span>
         )}
       </div>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => {
-                const end = item.url.split("/").length <= 2;
-                const current = pathname ?? "/";
-                const active = end ? current === item.url : current === item.url || current.startsWith(`${item.url}/`);
-
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={active}>
-                      <NavLink
-                        to={item.url}
-                        end={end}
-                        className="hover:bg-sidebar-accent/50"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                      >
-                        <item.icon className="mr-2 h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end={item.url.split("/").length <= 2}
+                      className="hover:bg-sidebar-accent/50"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -72,4 +63,3 @@ export function AppSidebar({ items, title }: AppSidebarProps) {
     </Sidebar>
   );
 }
-

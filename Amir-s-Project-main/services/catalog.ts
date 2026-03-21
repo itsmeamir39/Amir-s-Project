@@ -5,10 +5,15 @@
  */
 
 import type { TypedSupabaseClient } from '@/lib/supabase';
+import type { Database } from '@/types/database.types';
 import type { Biblio } from '@/types/library';
 import { validateReservationAllowed } from './circulationRules';
 
 export type BiblioWithItems = Biblio & { items: { status: string | null }[] };
+export type HoldRow = Pick<
+  Database['public']['Tables']['holds']['Row'],
+  'id' | 'biblio_id' | 'status' | 'created_at'
+>;
 
 /**
  * Search the book catalog by title, author, or ISBN
@@ -97,7 +102,7 @@ export async function reserveIfAllowed(
 export async function getUserHolds(
   client: TypedSupabaseClient,
   userId: string
-) {
+): Promise<HoldRow[]> {
   const { data, error } = await client
     .from('holds')
     .select('id, biblio_id, status, created_at')
@@ -105,6 +110,42 @@ export async function getUserHolds(
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as HoldRow[];
+}
+
+/**
+ * Get pending holds (active reservations) for a user
+ */
+export async function getPendingHolds(
+  client: TypedSupabaseClient,
+  userId: string
+): Promise<HoldRow[]> {
+  const { data, error } = await client
+    .from('holds')
+    .select('id, biblio_id, status, created_at')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as HoldRow[];
+}
+
+/**
+ * Cancel a pending hold owned by the user
+ */
+export async function cancelPendingHold(
+  client: TypedSupabaseClient,
+  userId: string,
+  holdId: number
+) {
+  const { error } = await client
+    .from('holds')
+    .update({ status: 'cancelled' })
+    .eq('id', holdId)
+    .eq('user_id', userId)
+    .eq('status', 'pending');
+
+  if (error) throw new Error(error.message);
 }
 

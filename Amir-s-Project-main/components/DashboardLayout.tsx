@@ -1,12 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Bell, LogOut, User } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
-
+import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar, type SidebarNavItem } from "@/components/AppSidebar";
+import { Bell, LogOut, User } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
@@ -16,13 +14,13 @@ interface DashboardLayoutProps {
   roleLabel: string;
 }
 
-export default function DashboardLayout({ children, items, title, roleLabel }: DashboardLayoutProps) {
+const DashboardLayout = ({ children, items, title, roleLabel }: DashboardLayoutProps) => {
   const router = useRouter();
   const pathname = usePathname();
 
   const getProfilePath = () => {
-    if ((pathname ?? "").startsWith("/admin")) return "/admin/profile";
-    if ((pathname ?? "").startsWith("/librarian")) return "/librarian/profile";
+    if (pathname.startsWith("/admin")) return "/admin/profile";
+    if (pathname.startsWith("/librarian")) return "/librarian/profile";
     return "/patron/profile";
   };
 
@@ -43,32 +41,26 @@ export default function DashboardLayout({ children, items, title, roleLabel }: D
                 <Bell className="h-4 w-4" />
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => router.push(getProfilePath())}
-              >
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => router.push(getProfilePath())}>
                 <User className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-destructive"
-                onClick={async () => {
-                  const supabase = createSupabaseBrowserClient();
-                  await supabase.auth.signOut();
-                  router.replace("/login");
-                }}
+                onClick={() => router.push("/login")}
               >
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </header>
-          <main className="flex-1 p-6 overflow-auto">{children}</main>
+          <main className="flex-1 p-6 overflow-auto">
+            {children}
+          </main>
         </div>
       </div>
     </SidebarProvider>
   );
-}
+};
 
+export default DashboardLayout;

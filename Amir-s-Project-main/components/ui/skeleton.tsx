@@ -1,7 +1,3 @@
-"use client";
-
-import * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -9,4 +5,3 @@ function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>)
 }
 
 export { Skeleton };
-

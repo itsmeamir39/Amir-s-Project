@@ -5,6 +5,19 @@
  */
 
 import type { TypedSupabaseClient } from '@/lib/supabase';
+import type { Database } from '@/types/database.types';
+
+type CirculationRuleRow = Database['public']['Tables']['circulation_rules']['Row'];
+type CirculationRuleSelectRow = Pick<
+  CirculationRuleRow,
+  | 'role'
+  | 'borrow_limit'
+  | 'loan_period_days'
+  | 'renewal_limit'
+  | 'fine_amount_per_day'
+  | 'max_fine_amount'
+  | 'grace_period_days'
+>;
 
 export interface CirculationRule {
   role: string;
@@ -13,7 +26,32 @@ export interface CirculationRule {
   renewal_limit: number;
   fine_amount_per_day: number;
   max_fine_amount: number;
-  grace_period_days: number | null;
+  grace_period_days: number;
+}
+
+const DEFAULT_CIRCULATION_RULES: Omit<CirculationRule, 'role'> = {
+  borrow_limit: 5,
+  loan_period_days: 14,
+  renewal_limit: 2,
+  fine_amount_per_day: 0.25,
+  max_fine_amount: 50,
+  grace_period_days: 0,
+};
+
+function normalizeCirculationRule(row: CirculationRuleSelectRow): CirculationRule {
+  return {
+    role: row.role,
+    borrow_limit: row.borrow_limit ?? DEFAULT_CIRCULATION_RULES.borrow_limit,
+    loan_period_days:
+      row.loan_period_days ?? DEFAULT_CIRCULATION_RULES.loan_period_days,
+    renewal_limit: row.renewal_limit ?? DEFAULT_CIRCULATION_RULES.renewal_limit,
+    fine_amount_per_day:
+      row.fine_amount_per_day ?? DEFAULT_CIRCULATION_RULES.fine_amount_per_day,
+    max_fine_amount:
+      row.max_fine_amount ?? DEFAULT_CIRCULATION_RULES.max_fine_amount,
+    grace_period_days:
+      row.grace_period_days ?? DEFAULT_CIRCULATION_RULES.grace_period_days,
+  };
 }
 
 /**
@@ -40,7 +78,7 @@ export async function getCirculationRulesByRole(
     throw new Error(`No circulation rules found for role: ${patronRole}`);
   }
 
-  return data;
+  return normalizeCirculationRule(data);
 }
 
 /**
@@ -133,15 +171,15 @@ export async function validateReservationAllowed(
   const role = userRecord?.role ?? 'Patron';
   const rule = await getCirculationRulesByRole(client, role);
 
-  const { data: engagements, error: engagementsError } = await client
+  const { data: holds, error: holdsError } = await client
     .from('holds')
     .select('id')
     .eq('user_id', userId)
     .eq("status", "pending");
 
-  if (engagementsError) throw new Error(`Failed to fetch reservations: ${engagementsError.message}`);
+  if (holdsError) throw new Error(`Failed to fetch reservations: ${holdsError.message}`);
 
-  const currentReservations = engagements?.length ?? 0;
+  const currentReservations = holds?.length ?? 0;
 
   if (currentReservations >= rule.borrow_limit) {
     throw new Error(

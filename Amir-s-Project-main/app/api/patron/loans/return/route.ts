@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/server-auth";
+import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,6 +14,7 @@ const returnSchema = z.object({
 export async function POST(request: Request) {
   const auth = await requireRole(["Patron", "Admin", "Librarian"]);
   if (!auth.ok) return auth.response;
+  const admin = createSupabaseAdminClient();
 
   const body = await request.json().catch(() => null);
   const parsed = returnSchema.safeParse(body);
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
   }
 
-  const { data: loan, error: loanError } = await auth.supabase
+  const { data: loan, error: loanError } = await admin
     .from("loans")
     .select("id, user_id")
     .eq("id", parsed.data.loanId)
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { error: updateError } = await auth.supabase
+  const { error: updateError } = await admin
     .from("loans")
     .update({ status: "Returned" })
     .eq("id", loan.id);

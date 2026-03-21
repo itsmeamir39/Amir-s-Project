@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 const roleSchema = z.enum(["Admin", "Librarian", "Patron"]);
 
 const settingsSchema = z.object({
+  id: z.number().optional(),
   maintenance_mode: z.boolean(),
   allow_self_registration: z.boolean(),
 });
@@ -83,10 +84,15 @@ export async function PUT(request: Request) {
   }
 
   const { rules, settings } = parsed.data;
+  const normalizedSettings = {
+    id: settings.id ?? 1,
+    maintenance_mode: settings.maintenance_mode,
+    allow_self_registration: settings.allow_self_registration,
+  };
 
   const [rulesResp, settingsResp] = await Promise.all([
     auth.supabase.from("circulation_rules").upsert(rules, { onConflict: "role" }),
-    auth.supabase.from("global_settings").upsert(settings, { onConflict: "id" }),
+    auth.supabase.from("global_settings").upsert(normalizedSettings, { onConflict: "id" }),
   ]);
 
   if (rulesResp.error || settingsResp.error) {

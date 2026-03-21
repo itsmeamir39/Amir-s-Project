@@ -98,7 +98,7 @@ export default function AdminSettingsPage() {
         setSettings(
           payload.settings
             ? (payload.settings as GlobalSettings)
-            : { maintenance_mode: false, allow_self_registration: true }
+            : { id: 1, maintenance_mode: false, allow_self_registration: true }
         );
         setAuditLogs((payload.logs as AuditLogRow[]) ?? []);
         const total = ((payload.fines as FineRow[] | undefined) ?? [])
@@ -184,6 +184,7 @@ export default function AdminSettingsPage() {
         body: JSON.stringify({
           rules: payload,
           settings: {
+            id: settings?.id ?? 1,
             maintenance_mode: settings?.maintenance_mode ?? false,
             allow_self_registration: settings?.allow_self_registration ?? true,
           },

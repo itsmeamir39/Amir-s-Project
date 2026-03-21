@@ -20,14 +20,7 @@ import {
 export const adminNav = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "User Management", url: "/admin/users", icon: Users },
-  { title: "Book Management", url: "/admin/books", icon: BookOpen },
-  { title: "Issue & Return", url: "/admin/transactions", icon: ArrowLeftRight },
-  { title: "Reservations", url: "/admin/reservations", icon: CalendarCheck },
-  { title: "Reports", url: "/admin/reports", icon: BarChart3 },
-  { title: "Notifications", url: "/admin/notifications", icon: Bell },
-  { title: "Suggestions", url: "/admin/suggestions", icon: MessageSquare },
   { title: "Settings", url: "/admin/settings", icon: Settings },
-  { title: "Audit Logs", url: "/admin/audit", icon: ClipboardList },
 ];
 
 export const librarianNav = [

@@ -32,6 +32,7 @@ export const adminNav = [
 
 export const librarianNav = [
   { title: "Dashboard", url: "/librarian", icon: LayoutDashboard },
+  { title: "Add Book", url: "/librarian/add-book", icon: BookOpen },
   { title: "Issue Book", url: "/librarian/issue", icon: ArrowLeftRight },
   { title: "Return Book", url: "/librarian/return", icon: CheckCircle },
   { title: "Reservations", url: "/librarian/reservations", icon: CalendarCheck },

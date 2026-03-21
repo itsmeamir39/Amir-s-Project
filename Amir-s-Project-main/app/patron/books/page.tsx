@@ -12,29 +12,13 @@ import { patronNav } from "@/lib/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { getCurrentUser } from "@/services/auth";
 import { getBibliosByIds } from "@/services/biblios";
-import { getCurrentLoans, renewLoan } from "@/services/loans";
+import { useCurrentLoans, useRenewLoanMutation } from "@/hooks/useLoans";
 import type { Loan } from "@/types/library";
 
 export default function PatronMyBooksPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loans, setLoans] = useState<Loan[]>([]);
+  const [userId, setUserId] = useState("");
   const [titles, setTitles] = useState<Record<number, { title: string; author: string | null }>>({});
-
-  const load = async () => {
-    if (!supabase) return;
-    setLoading(true);
-    try {
-      const user = await getCurrentUser(supabase);
-      const l = await getCurrentLoans(supabase, user.id);
-      setLoans(l);
-      setTitles(await getBibliosByIds(supabase, l.map((x) => x.biblio_id)));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load loans.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     setSupabase(createSupabaseBrowserClient());
@@ -42,17 +26,52 @@ export default function PatronMyBooksPage() {
 
   useEffect(() => {
     if (!supabase) return;
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const run = async () => {
+      try {
+        const user = await getCurrentUser(supabase);
+        setUserId(user.id);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to load session.");
+      }
+    };
+    void run();
   }, [supabase]);
+
+  const {
+    data: loans = [],
+    isLoading: loading,
+    error: loansError,
+    refetch,
+  } = useCurrentLoans(supabase, userId, !!supabase && !!userId);
+
+  const renewMutation = useRenewLoanMutation(supabase, userId);
+
+  useEffect(() => {
+    if (!loansError) return;
+    toast.error(loansError instanceof Error ? loansError.message : "Failed to load loans.");
+  }, [loansError]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const run = async () => {
+      try {
+        setTitles(await getBibliosByIds(supabase, loans.map((x) => x.biblio_id)));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to load book titles.");
+      }
+    };
+    if (loans.length > 0) {
+      void run();
+    } else {
+      setTitles({});
+    }
+  }, [loans, supabase]);
 
   const onRenew = async (loan: Loan) => {
     try {
-      if (!supabase) return;
-      const user = await getCurrentUser(supabase);
-      await renewLoan(supabase, user.id, loan);
+      await renewMutation.mutateAsync(loan);
       toast.success("Renewal requested.");
-      await load();
+      await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not renew.");
     }
@@ -91,8 +110,13 @@ export default function PatronMyBooksPage() {
                     <td className="px-4 py-3">{new Date(loan.due_date).toLocaleDateString()}</td>
                     <td className="px-4 py-3">{loan.renewals_used ?? 0}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => onRenew(loan)}>
-                        Request renewal
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRenew(loan)}
+                        disabled={renewMutation.isPending}
+                      >
+                        {renewMutation.isPending ? "Submitting..." : "Request renewal"}
                       </Button>
                     </td>
                   </tr>

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/server-auth";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const bookSchema = z.object({
   isbn: z.string().min(10).max(32),
   title: z.string().min(1),

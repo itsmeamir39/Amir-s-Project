@@ -19,14 +19,17 @@ const LOANS_QUERY_KEY = 'loans';
  * @returns Query result with loans data
  */
 export function useCurrentLoans(
-  client: TypedSupabaseClient,
+  client: TypedSupabaseClient | null,
   userId: string,
   enabled: boolean = true
 ) {
   return useQuery({
     queryKey: [LOANS_QUERY_KEY, 'current', userId],
-    queryFn: () => getCurrentLoans(client, userId),
-    enabled: enabled && !!userId,
+    queryFn: () => {
+      if (!client) throw new Error('Supabase client is not ready.');
+      return getCurrentLoans(client, userId);
+    },
+    enabled: enabled && !!client && !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
@@ -38,13 +41,16 @@ export function useCurrentLoans(
  * @returns Mutation object with renew function and state
  */
 export function useRenewLoanMutation(
-  client: TypedSupabaseClient,
+  client: TypedSupabaseClient | null,
   userId: string
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (loan: Loan) => renewLoan(client, userId, loan),
+    mutationFn: (loan: Loan) => {
+      if (!client) throw new Error('Supabase client is not ready.');
+      return renewLoan(client, userId, loan);
+    },
     onSuccess: () => {
       // Invalidate and refetch loans after successful renewal
       queryClient.invalidateQueries({ queryKey: [LOANS_QUERY_KEY, 'current', userId] });
@@ -59,13 +65,16 @@ export function useRenewLoanMutation(
  * @returns Mutation object with return function and state
  */
 export function useReturnLoanMutation(
-  client: TypedSupabaseClient,
+  client: TypedSupabaseClient | null,
   userId: string
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (loanId: number) => returnLoan(client, loanId),
+    mutationFn: (loanId: number) => {
+      if (!client) throw new Error('Supabase client is not ready.');
+      return returnLoan(client, loanId);
+    },
     onSuccess: () => {
       // Invalidate and refetch loans after successful return
       queryClient.invalidateQueries({ queryKey: [LOANS_QUERY_KEY, 'current', userId] });

@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const eventSchema = z.object({
   eventId: z.string().min(1),
   provider: z.string().min(1),

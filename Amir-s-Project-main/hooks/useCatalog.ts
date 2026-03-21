@@ -18,14 +18,17 @@ const CATALOG_QUERY_KEY = 'catalog';
  * @returns Query result with search results
  */
 export function useCatalogSearch(
-  client: TypedSupabaseClient,
+  client: TypedSupabaseClient | null,
   searchTerm: string,
   enabled: boolean = true
 ) {
   return useQuery({
     queryKey: [CATALOG_QUERY_KEY, 'search', searchTerm],
-    queryFn: () => searchCatalog(client, searchTerm),
-    enabled: enabled && !!searchTerm.trim(),
+    queryFn: () => {
+      if (!client) throw new Error('Supabase client is not ready.');
+      return searchCatalog(client, searchTerm);
+    },
+    enabled: enabled && !!client && !!searchTerm.trim(),
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }
@@ -38,14 +41,17 @@ export function useCatalogSearch(
  * @returns Query result with holds data
  */
 export function useUserHolds(
-  client: TypedSupabaseClient,
+  client: TypedSupabaseClient | null,
   userId: string,
   enabled: boolean = true
 ) {
   return useQuery({
     queryKey: [CATALOG_QUERY_KEY, 'holds', userId],
-    queryFn: () => getUserHolds(client, userId),
-    enabled: enabled && !!userId,
+    queryFn: () => {
+      if (!client) throw new Error('Supabase client is not ready.');
+      return getUserHolds(client, userId);
+    },
+    enabled: enabled && !!client && !!userId,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
@@ -57,14 +63,16 @@ export function useUserHolds(
  * @returns Mutation object with placeHold function and state
  */
 export function usePlaceHoldMutation(
-  client: TypedSupabaseClient,
+  client: TypedSupabaseClient | null,
   userId: string
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ biblioId }: { biblioId: number }) =>
-      placeHold(client, userId, biblioId),
+    mutationFn: ({ biblioId }: { biblioId: number }) => {
+      if (!client) throw new Error('Supabase client is not ready.');
+      return placeHold(client, userId, biblioId);
+    },
     onSuccess: () => {
       // Invalidate and refetch holds after successful placement
       queryClient.invalidateQueries({ queryKey: [CATALOG_QUERY_KEY, 'holds', userId] });
@@ -79,14 +87,16 @@ export function usePlaceHoldMutation(
  * @returns Mutation object with reserve function and state
  */
 export function useReserveBookMutation(
-  client: TypedSupabaseClient,
+  client: TypedSupabaseClient | null,
   userId: string
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ biblioId }: { biblioId: number }) =>
-      reserveIfAllowed(client, userId, biblioId),
+    mutationFn: ({ biblioId }: { biblioId: number }) => {
+      if (!client) throw new Error('Supabase client is not ready.');
+      return reserveIfAllowed(client, userId, biblioId);
+    },
     onSuccess: () => {
       // Invalidate and refetch holds after successful reservation
       queryClient.invalidateQueries({ queryKey: [CATALOG_QUERY_KEY, 'holds', userId] });

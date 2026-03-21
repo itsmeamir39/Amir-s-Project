@@ -10,6 +10,15 @@ import { useParams } from "next/navigation";
 
 type TableRow = Record<string, string | number | null>;
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null && "message" in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) return message;
+  }
+  return "Failed to load module data.";
+}
+
 const sectionTitles: Record<string, string> = {
   issue: "Issue Book",
   return: "Return Book",
@@ -50,7 +59,7 @@ export default function LibrarianSubPage() {
           const { data, error: qError } = await supabase
             .from("loans")
             .select("id, user_id, biblio_id, status, borrowed_at, due_date")
-            .eq("status", "borrowed")
+            .eq("status", "CheckedOut")
             .order("borrowed_at", { ascending: false })
             .limit(30);
           if (qError) throw qError;
@@ -59,7 +68,7 @@ export default function LibrarianSubPage() {
           const { data, error: qError } = await supabase
             .from("loans")
             .select("id, user_id, biblio_id, status, due_date, updated_at")
-            .in("status", ["borrowed", "overdue"])
+            .in("status", ["CheckedOut", "Overdue"])
             .order("due_date", { ascending: true })
             .limit(30);
           if (qError) throw qError;
@@ -91,14 +100,17 @@ export default function LibrarianSubPage() {
         } else if (section === "reports") {
           const [catalog, activeLoans, pendingHolds, overdueLoans] = await Promise.all([
             supabase.from("biblios").select("id", { head: true, count: "exact" }),
-            supabase.from("loans").select("id", { head: true, count: "exact" }).eq("status", "borrowed"),
+            supabase.from("loans").select("id", { head: true, count: "exact" }).eq("status", "CheckedOut"),
             supabase.from("holds").select("id", { head: true, count: "exact" }).eq("status", "pending"),
             supabase
               .from("loans")
               .select("id", { head: true, count: "exact" })
               .lt("due_date", new Date().toISOString())
-              .eq("status", "borrowed"),
+              .eq("status", "CheckedOut"),
           ]);
+
+          const reportError = catalog.error ?? activeLoans.error ?? pendingHolds.error ?? overdueLoans.error;
+          if (reportError) throw reportError;
 
           if (!cancelled) {
             setSummary([
@@ -111,7 +123,7 @@ export default function LibrarianSubPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load module data.");
+          setError(getErrorMessage(err));
           setRows([]);
           setSummary([]);
         }

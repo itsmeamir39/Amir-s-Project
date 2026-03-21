@@ -11,27 +11,13 @@ import { Button } from "@/components/ui/button";
 import { patronNav } from "@/lib/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { getCurrentUser } from "@/services/auth";
-import { getUserFines, requestFinePayment } from "@/services/fines";
+import { usePayFineMutation, useUserFines } from "@/hooks/useFines";
 import type { Fine } from "@/types/library";
 
 export default function PatronFinesPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fines, setFines] = useState<Fine[]>([]);
+  const [userId, setUserId] = useState("");
   const [payingFineId, setPayingFineId] = useState<number | null>(null);
-
-  const load = async () => {
-    if (!supabase) return;
-    setLoading(true);
-    try {
-      const user = await getCurrentUser(supabase);
-      setFines(await getUserFines(supabase, user.id));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load fines.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     setSupabase(createSupabaseBrowserClient());
@@ -39,20 +25,41 @@ export default function PatronFinesPage() {
 
   useEffect(() => {
     if (!supabase) return;
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const run = async () => {
+      try {
+        const user = await getCurrentUser(supabase);
+        setUserId(user.id);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to load session.");
+      }
+    };
+    void run();
   }, [supabase]);
+
+  const {
+    data: fines = [],
+    isLoading: loading,
+    error: finesError,
+    refetch,
+  } = useUserFines(supabase, userId, !!supabase && !!userId);
+
+  const payMutation = usePayFineMutation(supabase, userId);
+
+  useEffect(() => {
+    if (!finesError) return;
+    toast.error(finesError instanceof Error ? finesError.message : "Failed to load fines.");
+  }, [finesError]);
 
   const onPay = async (fineId: number) => {
     setPayingFineId(fineId);
     try {
-      const result = await requestFinePayment(fineId);
+      const result = await payMutation.mutateAsync(fineId);
       if (result.status === "succeeded") {
         toast.success("Payment verified and recorded.");
       } else {
         toast.info("Payment initiated. Waiting for provider confirmation.");
       }
-      await load();
+      await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment failed.");
     } finally {
@@ -99,7 +106,11 @@ export default function PatronFinesPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {fine.status === "Unpaid" ? (
-                      <Button size="sm" onClick={() => onPay(fine.id)} disabled={payingFineId === fine.id}>
+                      <Button
+                        size="sm"
+                        onClick={() => onPay(fine.id)}
+                        disabled={payingFineId === fine.id || payMutation.isPending}
+                      >
                         {payingFineId === fine.id ? "Processing..." : "Pay"}
                       </Button>
                     ) : (

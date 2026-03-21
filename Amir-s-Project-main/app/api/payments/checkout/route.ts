@@ -4,8 +4,11 @@ import { z } from "zod";
 
 import { requireRole } from "@/lib/server-auth";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const checkoutSchema = z.object({
-  fineId: z.number().int().positive(),
+  fineId: z.coerce.number().int().positive(),
 });
 
 function signPayload(payload: string, secret: string) {
@@ -19,7 +22,13 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: parsed.error.issues[0]?.message ?? "Invalid payload",
+        details: parsed.error.issues,
+      },
+      { status: 400 }
+    );
   }
 
   const fineId = parsed.data.fineId;

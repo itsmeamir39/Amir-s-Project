@@ -10,6 +10,15 @@ import { useParams } from "next/navigation";
 
 type TableRow = Record<string, string | number | null>;
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null && "message" in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) return message;
+  }
+  return "Failed to load module data.";
+}
+
 const sectionTitles: Record<string, string> = {
   books: "Book Management",
   transactions: "Issue & Return",
@@ -74,10 +83,13 @@ export default function AdminSubPage() {
         } else if (section === "reports") {
           const [books, borrowed, pending, fines] = await Promise.all([
             supabase.from("biblios").select("id", { head: true, count: "exact" }),
-            supabase.from("loans").select("id", { head: true, count: "exact" }).eq("status", "borrowed"),
+            supabase.from("loans").select("id", { head: true, count: "exact" }).eq("status", "CheckedOut"),
             supabase.from("holds").select("id", { head: true, count: "exact" }).eq("status", "pending"),
             supabase.from("fines").select("amount, status"),
           ]);
+
+          const reportError = books.error ?? borrowed.error ?? pending.error ?? fines.error;
+          if (reportError) throw reportError;
 
           const unpaidTotal = (fines.data ?? [])
             .filter((f) => (f.status ?? "").toLowerCase() === "unpaid")
@@ -118,7 +130,7 @@ export default function AdminSubPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load module data.");
+          setError(getErrorMessage(err));
           setRows([]);
           setSummary([]);
         }

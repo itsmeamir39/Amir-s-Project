@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/server-auth";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const roleSchema = z.enum(["Admin", "Librarian", "Patron"]);
 
 const settingsSchema = z.object({

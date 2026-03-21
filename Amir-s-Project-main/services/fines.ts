@@ -90,10 +90,15 @@ export async function payFine(
  * This delegates status updates to verified webhook processing.
  */
 export async function requestFinePayment(fineId: number): Promise<PaymentCheckoutResponse> {
+  const normalizedFineId = Number(fineId);
+  if (!Number.isFinite(normalizedFineId) || normalizedFineId <= 0) {
+    throw new Error('Invalid fine id.');
+  }
+
   const response = await fetch('/api/payments/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fineId }),
+    body: JSON.stringify({ fineId: normalizedFineId }),
   });
 
   const payload = await response.json();

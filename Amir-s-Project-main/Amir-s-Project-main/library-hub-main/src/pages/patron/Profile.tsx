@@ -1,0 +1,122 @@
+import { useRef } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import PageHeader from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Save, Printer, Download } from "lucide-react";
+import { patronNav } from "@/lib/navigation";
+import Barcode from "react-barcode";
+import { generateBarcode } from "@/components/UserFormDialog";
+import { toast } from "@/hooks/use-toast";
+
+const Profile = () => {
+  const userBarcode = generateBarcode(1);
+  const barcodeRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    const el = barcodeRef.current;
+    if (!el) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html><head><title>Library Member Card</title>
+      <style>body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;}
+      h2{margin-bottom:8px;} p{color:#666;font-size:12px;margin-top:4px;}</style></head>
+      <body><h2>Library Member Card</h2>${el.innerHTML}<p>Present this barcode when borrowing or returning books</p>
+      <script>window.print();window.close();</script></body></html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleDownload = () => {
+    const svg = barcodeRef.current?.querySelector("svg");
+    if (!svg) return;
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width * 2;
+      canvas.height = img.height * 2;
+      ctx!.fillStyle = "#ffffff";
+      ctx!.fillRect(0, 0, canvas.width, canvas.height);
+      ctx!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const a = document.createElement("a");
+      a.download = `member-barcode-${userBarcode}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      toast({ title: "Downloaded", description: "Barcode image saved." });
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgStr)));
+  };
+
+  return (
+    <DashboardLayout items={patronNav} title="LibraryMS" roleLabel="Patron">
+      <PageHeader title="My Profile" description="Manage your account settings" />
+      <div className="max-w-xl space-y-6">
+        {/* Member Barcode Card */}
+        <div className="glass-card rounded-xl p-6 flex flex-col items-center gap-3">
+          <h3 className="font-display font-semibold text-foreground">Library Member Card</h3>
+          <div ref={barcodeRef}>
+            <Barcode value={userBarcode} width={2} height={70} fontSize={14} background="transparent" lineColor="currentColor" />
+          </div>
+          <p className="text-xs text-muted-foreground">Present this barcode when borrowing or returning books</p>
+          <div className="flex gap-2 mt-1">
+            <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-1" /> Print
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-1" /> Download
+            </Button>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-xl p-6 space-y-4">
+          <h3 className="font-display font-semibold text-foreground">Personal Information</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-foreground">First Name</Label>
+              <Input defaultValue="John" className="bg-background" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground">Last Name</Label>
+              <Input defaultValue="Doe" className="bg-background" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground">Email</Label>
+            <Input defaultValue="john@library.com" className="bg-background" disabled />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground">Phone</Label>
+            <Input defaultValue="+1 (555) 123-4567" className="bg-background" />
+          </div>
+          <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Save className="h-4 w-4 mr-2" /> Save Changes
+          </Button>
+        </div>
+
+        <div className="glass-card rounded-xl p-6 space-y-4">
+          <h3 className="font-display font-semibold text-foreground">Change Password</h3>
+          <div className="space-y-2">
+            <Label className="text-foreground">Current Password</Label>
+            <Input type="password" placeholder="••••••••" className="bg-background" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground">New Password</Label>
+            <Input type="password" placeholder="••••••••" className="bg-background" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground">Confirm New Password</Label>
+            <Input type="password" placeholder="••••••••" className="bg-background" />
+          </div>
+          <Button variant="outline">Update Password</Button>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default Profile;

@@ -65,7 +65,7 @@ export default function AdminSettingsPage() {
 
   const ensureDefaultRoles = React.useCallback(
     (existing: CirculationRuleRow[]): CirculationRuleRow[] => {
-      const roles = ['Student', 'Faculty', 'Staff'];
+      const roles = ['Admin', 'Librarian', 'Patron'];
       const byRole = new Map(existing.map((r) => [r.role, r]));
 
       return roles.map((role) => {

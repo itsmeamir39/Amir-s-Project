@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/server-auth";
 
+const roleSchema = z.enum(["Admin", "Librarian", "Patron"]);
+
 const settingsSchema = z.object({
   maintenance_mode: z.boolean(),
   allow_self_registration: z.boolean(),
@@ -9,7 +11,7 @@ const settingsSchema = z.object({
 
 const ruleSchema = z.object({
   id: z.number().optional(),
-  role: z.string().min(1),
+  role: roleSchema,
   loan_period_days: z.number().nullable(),
   borrow_limit: z.number().nullable(),
   fine_amount_per_day: z.number().nullable(),
@@ -71,7 +73,8 @@ export async function PUT(request: Request) {
   const auth = await requireRole(["Admin"]);
   if (!auth.ok) return auth.response;
 
-  const parsed = payloadSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = payloadSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
   }

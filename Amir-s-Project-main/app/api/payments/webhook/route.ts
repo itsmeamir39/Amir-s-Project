@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     actor: "payment-webhook",
     action: "PAYMENT_EVENT",
     details: JSON.stringify({ fineId, status, providerRef }),
+    admin_id: auth.user.id,
   });
 
   return NextResponse.json({ ok: true });

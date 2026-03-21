@@ -36,6 +36,8 @@ type UserRow = {
   role: string;
 };
 
+const ROLE_OPTIONS = ["Admin", "Librarian", "Patron"] as const;
+
 function RoleBadge({ role }: { role: string }) {
   const variant: BadgeProps["variant"] = role === "Admin" ? "default" : "secondary";
   return (
@@ -229,12 +231,18 @@ export default function AdminUsersPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="newUserRole">Role</Label>
-              <Input
+              <select
                 id="newUserRole"
                 value={newUserRole}
                 onChange={(e) => setNewUserRole(e.target.value)}
-                placeholder="Admin | Librarian | Patron"
-              />
+                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {ROLE_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <DialogFooter>
@@ -261,12 +269,18 @@ export default function AdminUsersPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="editRole">Role</Label>
-              <Input
+              <select
                 id="editRole"
                 value={editRole}
                 onChange={(e) => setEditRole(e.target.value)}
-                placeholder="Admin | Librarian | Patron"
-              />
+                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {ROLE_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

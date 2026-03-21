@@ -3,12 +3,12 @@ import { z } from "zod";
 import { requireRole } from "@/lib/server-auth";
 
 const bookSchema = z.object({
-  isbn: z.string().min(10),
+  isbn: z.string().min(10).max(32),
   title: z.string().min(1),
   author: z.string().min(1),
   publisher: z.string().min(1),
   description: z.string().optional(),
-  cover: z.string().optional(),
+  cover: z.string().url().optional(),
 });
 
 function generateBarcode() {
@@ -20,7 +20,8 @@ export async function POST(request: Request) {
   const auth = await requireRole(["Admin", "Librarian"]);
   if (!auth.ok) return auth.response;
 
-  const parsed = bookSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = bookSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
   }

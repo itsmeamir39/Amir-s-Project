@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireRole, isValidRole } from "@/lib/server-auth";
+import { requireRole } from "@/lib/server-auth";
+
+const roleSchema = z.enum(["Admin", "Librarian", "Patron"]);
 
 const createUserSchema = z.object({
   id: z.string().uuid(),
-  role: z.string().refine(isValidRole, "Invalid role"),
+  role: roleSchema,
 });
 
 const updateUserSchema = z.object({
   id: z.string().uuid(),
-  role: z.string().refine(isValidRole, "Invalid role"),
+  role: roleSchema,
 });
 
 export async function GET() {
@@ -32,7 +34,8 @@ export async function POST(request: Request) {
   const auth = await requireRole(["Admin"]);
   if (!auth.ok) return auth.response;
 
-  const parsed = createUserSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = createUserSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
   }
@@ -49,7 +52,8 @@ export async function PATCH(request: Request) {
   const auth = await requireRole(["Admin"]);
   if (!auth.ok) return auth.response;
 
-  const parsed = updateUserSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = updateUserSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
   }

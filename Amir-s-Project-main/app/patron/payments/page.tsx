@@ -26,10 +26,11 @@ export default function PatronPaymentsPage() {
           .from("audit_logs")
           .select("id, details, created_at")
           .eq("action", "PAYMENT_EVENT")
+          .eq("admin_id", user.id)
           .order("created_at", { ascending: false });
         if (error) throw new Error(error.message);
 
-        const filtered = (data ?? []).filter((row) => (row.details ?? "").length > 0 || Boolean(user.id));
+        const filtered = (data ?? []).filter((row) => (row.details ?? "").length > 0);
         setRows(filtered);
       } finally {
         setLoading(false);

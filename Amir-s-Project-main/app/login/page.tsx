@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BookOpen, Lock, Mail } from "lucide-react";
 
@@ -19,6 +19,28 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
+      setResetMode(true);
+      setInfo("Reset link detected. Enter a new password.");
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setResetMode(true);
+        setInfo("Password recovery started. Enter your new password.");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +80,38 @@ export default function LoginPage() {
       setInfo("Password reset email sent. Check your inbox.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send reset email.");
+    }
+  };
+
+  const handleCompleteReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+
+    if (!newPassword || newPassword.length < 8) {
+      setError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw new Error(updateError.message);
+
+      await supabase.auth.signOut();
+      setResetMode(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      setInfo("Password updated. You can now sign in with your new password.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update password.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,7 +157,52 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          {resetMode ? (
+            <form onSubmit={handleCompleteReset} className="space-y-5">
+              <div className="space-y-2">
+                <label htmlFor="newPassword" className="text-sm font-medium text-foreground">
+                  New password
+                </label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  placeholder="At least 8 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="bg-card border-border"
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+                  Confirm password
+                </label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Repeat password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-card border-border"
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90 h-11 text-base font-semibold"
+              >
+                {loading ? "Updating password..." : "Set new password"}
+              </Button>
+
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setResetMode(false)}>
+                Back to sign in
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-foreground">
                 Email
@@ -161,7 +260,8 @@ export default function LoginPage() {
                 </span>
               )}
             </Button>
-          </form>
+            </form>
+          )}
 
           <p className="mt-8 text-center text-xs text-muted-foreground">Role assignment comes from `public.users.role`.</p>
         </div>

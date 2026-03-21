@@ -16,6 +16,16 @@ function generateBarcode() {
   return `LIB-${randomId}`;
 }
 
+function normalizeSupabaseErrorMessage(message: string) {
+  if (message.includes("biblios_isbn_unique") || message.toLowerCase().includes("isbn")) {
+    return "A book with this ISBN already exists.";
+  }
+  if (message.includes("items_barcode_unique") || message.toLowerCase().includes("barcode")) {
+    return "Barcode already exists. Please try again.";
+  }
+  return message;
+}
+
 export async function POST(request: Request) {
   const auth = await requireRole(["Admin", "Librarian"]);
   if (!auth.ok) return auth.response;
@@ -29,31 +39,21 @@ export async function POST(request: Request) {
   const barcode = generateBarcode();
   const values = parsed.data;
 
-  const { data: biblio, error: biblioError } = await auth.supabase
-    .from("biblios")
-    .insert({
-      isbn: values.isbn,
-      title: values.title,
-      author: values.author,
-      publisher: values.publisher,
-      description: values.description,
-      cover_url: values.cover,
-    })
-    .select("id")
-    .single();
-
-  if (biblioError || !biblio?.id) {
-    return NextResponse.json({ error: biblioError?.message ?? "Failed to create book" }, { status: 400 });
-  }
-
-  const { error: itemError } = await auth.supabase.from("items").insert({
-    biblio_id: biblio.id,
-    barcode,
+  const { data, error } = await (auth.supabase as any).rpc("create_biblio_with_item", {
+    p_isbn: values.isbn,
+    p_title: values.title,
+    p_author: values.author,
+    p_publisher: values.publisher,
+    p_description: values.description ?? null,
+    p_cover_url: values.cover ?? null,
+    p_barcode: barcode,
   });
 
-  if (itemError) {
-    return NextResponse.json({ error: itemError.message }, { status: 400 });
+  if (error) {
+    return NextResponse.json({ error: normalizeSupabaseErrorMessage(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true, barcode });
+  const row = Array.isArray(data) ? data[0] : data;
+
+  return NextResponse.json({ ok: true, barcode: row?.barcode ?? barcode, biblioId: row?.biblio_id ?? null });
 }

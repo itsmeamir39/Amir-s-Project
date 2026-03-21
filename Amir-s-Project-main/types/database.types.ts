@@ -441,6 +441,21 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      create_biblio_with_item: {
+        Args: {
+          p_isbn: string;
+          p_title: string;
+          p_author: string;
+          p_publisher: string;
+          p_description?: string | null;
+          p_cover_url?: string | null;
+          p_barcode?: string | null;
+        };
+        Returns: {
+          biblio_id: number;
+          barcode: string;
+        }[];
+      };
       current_user_role: {
         Args: Record<PropertyKey, never>;
         Returns: string;

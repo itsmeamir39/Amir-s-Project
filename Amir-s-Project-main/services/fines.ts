@@ -16,6 +16,13 @@ export interface PaymentPayload {
   transactionId?: string;
 }
 
+export interface PaymentCheckoutResponse {
+  ok: boolean;
+  providerRef: string;
+  eventId: string;
+  status: 'succeeded' | 'pending';
+}
+
 /**
  * Get all fines for a user
  * @param client - Typed Supabase client
@@ -76,6 +83,25 @@ export async function payFine(
     .update({ status: 'Paid' as FineStatus })
     .eq('id', fineId);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Initiate provider-backed fine payment.
+ * This delegates status updates to verified webhook processing.
+ */
+export async function requestFinePayment(fineId: number): Promise<PaymentCheckoutResponse> {
+  const response = await fetch('/api/payments/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fineId }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error ?? 'Failed to initiate payment.');
+  }
+
+  return payload as PaymentCheckoutResponse;
 }
 
 /**

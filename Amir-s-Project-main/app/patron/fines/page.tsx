@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button";
 import { patronNav } from "@/lib/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { getCurrentUser } from "@/services/auth";
-import { getUserFines } from "@/services/fines";
+import { getUserFines, requestFinePayment } from "@/services/fines";
 import type { Fine } from "@/types/library";
 
 export default function PatronFinesPage() {
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [loading, setLoading] = useState(true);
   const [fines, setFines] = useState<Fine[]>([]);
+  const [payingFineId, setPayingFineId] = useState<number | null>(null);
 
   const load = async () => {
     if (!supabase) return;
@@ -43,18 +44,19 @@ export default function PatronFinesPage() {
   }, [supabase]);
 
   const onPay = async (fineId: number) => {
+    setPayingFineId(fineId);
     try {
-      const response = await fetch("/api/payments/webhook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fineId, status: "succeeded", providerRef: `manual-${Date.now()}` }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "Payment failed.");
-      toast.success("Payment recorded successfully.");
+      const result = await requestFinePayment(fineId);
+      if (result.status === "succeeded") {
+        toast.success("Payment verified and recorded.");
+      } else {
+        toast.info("Payment initiated. Waiting for provider confirmation.");
+      }
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment failed.");
+    } finally {
+      setPayingFineId(null);
     }
   };
 
@@ -97,8 +99,8 @@ export default function PatronFinesPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {fine.status === "Unpaid" ? (
-                      <Button size="sm" onClick={() => onPay(fine.id)}>
-                        Pay
+                      <Button size="sm" onClick={() => onPay(fine.id)} disabled={payingFineId === fine.id}>
+                        {payingFineId === fine.id ? "Processing..." : "Pay"}
                       </Button>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>

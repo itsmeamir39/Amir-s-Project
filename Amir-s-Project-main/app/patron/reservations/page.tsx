@@ -15,7 +15,7 @@ import { getBibliosByIds } from "@/services/biblios";
 type ReservationRow = {
   id: number;
   biblio_id: number;
-  type?: string | null;
+  status?: string | null;
   created_at?: string | null;
 };
 
@@ -36,19 +36,18 @@ export default function PatronReservationsPage() {
       try {
         const user = await getCurrentUser(supabase);
 
-        // TODO: unify reservations/holds: this app currently uses both `holds` and `engagement` (type=Reservation).
         const { data, error } = await supabase
-          .from("engagement")
-          .select("id, biblio_id, type, created_at")
+          .from("holds")
+          .select("id, biblio_id, status, created_at")
           .eq("user_id", user.id)
-          .eq("type", "Reservation")
+          .eq("status", "pending")
           .order("created_at", { ascending: false });
         if (error) throw new Error(error.message);
 
         const r: ReservationRow[] = (data ?? []).map((d) => ({
           id: d.id,
           biblio_id: d.biblio_id,
-          type: d.type,
+          status: d.status,
           created_at: d.created_at,
         }));
 
@@ -62,6 +61,18 @@ export default function PatronReservationsPage() {
     };
     void run();
   }, [supabase]);
+
+  const cancelHold = async (id: number) => {
+    if (!supabase) return;
+    try {
+      const { error } = await supabase.from("holds").update({ status: "cancelled" }).eq("id", id);
+      if (error) throw new Error(error.message);
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Reservation cancelled.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to cancel reservation.");
+    }
+  };
 
   return (
     <DashboardLayout items={patronNav} title="LibraryMS" roleLabel="Patron">
@@ -80,6 +91,7 @@ export default function PatronReservationsPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-medium">Book</th>
                 <th className="text-left px-4 py-3 font-medium">Created</th>
+                <th className="text-right px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -94,14 +106,16 @@ export default function PatronReservationsPage() {
                     <td className="px-4 py-3">
                       {row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <button className="text-xs text-destructive hover:underline" onClick={() => void cancelHold(row.id)}>
+                        Cancel
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-          <p className="px-4 py-3 text-xs text-muted-foreground">
-            TODO: Add cancel/fulfillment actions, and reconcile `holds` vs `engagement` reservation storage.
-          </p>
         </div>
       )}
     </DashboardLayout>

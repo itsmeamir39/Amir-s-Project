@@ -43,10 +43,10 @@ export default function PatronDashboardPage() {
         );
 
         const { count, error: resError } = await supabase
-          .from("engagement")
+          .from("holds")
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)
-          .eq("type", "Reservation");
+          .eq("status", "pending");
         if (resError) throw new Error(resError.message);
         setReservations(count ?? 0);
       } catch (err) {
@@ -67,9 +67,7 @@ export default function PatronDashboardPage() {
       </div>
 
       <div className="mt-6 glass-card rounded-xl p-6">
-        <p className="text-sm text-muted-foreground">
-          TODO: Bring over the full Library Hub Patron dashboard UI (charts, recommendations, recent activity).
-        </p>
+        <p className="text-sm text-muted-foreground">Your dashboard updates from live loans, holds, and fines data.</p>
       </div>
     </DashboardLayout>
   );

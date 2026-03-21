@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import JsBarcode from 'jsbarcode';
 
-import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { fetchBookByISBN } from '@/services/googleBooks';
 
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,6 @@ type BookFormValues = z.infer<typeof bookSchema>;
 type Step = 1 | 2 | 3;
 
 export default function AddBookPage() {
-  const [supabase, setSupabase] = React.useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   const [step, setStep] = React.useState<Step>(1);
   const [isSearching, setIsSearching] = React.useState(false);
@@ -56,10 +54,6 @@ export default function AddBookPage() {
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = React.useState(false);
 
   const barcodeRef = React.useRef<SVGSVGElement | null>(null);
-
-  React.useEffect(() => {
-    setSupabase(createSupabaseBrowserClient());
-  }, []);
 
   const {
     register,
@@ -147,36 +141,15 @@ export default function AddBookPage() {
     const barcode = generateBarcode();
 
     try {
-      if (!supabase) throw new Error('Supabase client not ready yet.');
-      // Create record in biblios table
-      const { data: biblioData, error: biblioError } = await supabase
-        .from('biblios')
-        .insert({
-          isbn: values.isbn,
-          title: values.title,
-          author: values.author,
-          publisher: values.publisher,
-          description: values.description,
-          cover_url: values.cover,
-        })
-        .select('id')
-        .single();
-
-      if (biblioError || !biblioData?.id) {
-        throw new Error(biblioError?.message ?? 'Failed to create biblio record.');
-      }
-
-      // Create record in items table
-      const { error: itemError } = await supabase.from('items').insert({
-        biblio_id: biblioData.id,
-        barcode,
+      const response = await fetch('/api/librarian/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
       });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? 'Failed to create book record.');
 
-      if (itemError) {
-        throw new Error(itemError.message ?? 'Failed to create item record.');
-      }
-
-      setBarcodeValue(barcode);
+      setBarcodeValue(payload.barcode ?? barcode);
       setStep(3);
       setIsSuccessDialogOpen(true);
       reset();
@@ -193,7 +166,9 @@ export default function AddBookPage() {
   };
 
   const handlePrintLabel = () => {
-    const printArea = document.getElementById('barcode-print-area');
+    const printArea =
+      document.getElementById('barcode-dialog-area') ??
+      document.getElementById('barcode-preview-area');
     if (!printArea) return;
 
     const win = window.open('', '', 'height=400,width=600');
@@ -462,7 +437,7 @@ export default function AddBookPage() {
               <CardContent>
                 {barcodeValue ? (
                   <div
-                    id="barcode-print-area"
+                    id="barcode-preview-area"
                     className="flex flex-col items-center gap-3 rounded-lg bg-slate-100 px-4 py-3 text-slate-900"
                   >
                     <svg ref={barcodeRef} className="h-20 w-full" />
@@ -494,7 +469,7 @@ export default function AddBookPage() {
             <div className="mt-4">
               {barcodeValue && (
                 <div
-                  id="barcode-print-area"
+                  id="barcode-dialog-area"
                   className="flex flex-col items-center gap-3 rounded-lg bg-slate-100 px-4 py-3 text-slate-900"
                 >
                   <svg ref={barcodeRef} className="h-20 w-full" />

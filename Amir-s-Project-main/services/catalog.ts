@@ -78,11 +78,11 @@ export async function reserveIfAllowed(
   // Validate that reservation is allowed per circulation rules
   await validateReservationAllowed(client, userId);
 
-  // Create the reservation engagement record
-  const { error: insertError } = await client.from('engagement').insert({
+  // Create hold record after reservation checks pass
+  const { error: insertError } = await client.from('holds').insert({
     user_id: userId,
     biblio_id: biblioId,
-    type: 'Reservation',
+    status: "pending",
   });
   if (insertError) throw new Error(insertError.message);
 }

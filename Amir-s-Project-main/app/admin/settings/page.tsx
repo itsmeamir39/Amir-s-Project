@@ -2,8 +2,6 @@
 export const dynamic = 'force-dynamic';
 
 import * as React from 'react';
-import { logAdminAction } from '@/lib/audit';
-import { createSupabaseBrowserClient } from '@/lib/supabase';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,11 +42,12 @@ type AuditLogRow = {
   created_at: string;
 };
 
-export default function AdminSettingsPage() {
-  const [supabase, setSupabase] = React.useState<
-    ReturnType<typeof createSupabaseBrowserClient> | null
-  >(null);
+type FineRow = {
+  status: string | null;
+  amount: number | null;
+};
 
+export default function AdminSettingsPage() {
   const [rules, setRules] = React.useState<CirculationRuleRow[]>([]);
   const [rulesSaving, setRulesSaving] = React.useState(false);
   const [rulesMessage, setRulesMessage] = React.useState<string | null>(null);
@@ -88,53 +87,21 @@ export default function AdminSettingsPage() {
   );
 
   React.useEffect(() => {
-    setSupabase(createSupabaseBrowserClient());
-  }, []);
-
-  React.useEffect(() => {
-    if (!supabase) return;
     const load = async () => {
       try {
-        const [
-          rulesResp,
-          settingsResp,
-          logsResp,
-          finesResp,
-        ] = await Promise.all([
-          supabase
-            .from('circulation_rules')
-            .select(
-              'id, role, loan_period_days, borrow_limit, fine_amount_per_day, renewal_limit, grace_period_days, max_fine_amount'
-            ),
-          supabase
-            .from('global_settings')
-            .select('id, maintenance_mode, allow_self_registration')
-            .maybeSingle(),
-          supabase
-            .from('audit_logs')
-            .select('id, actor, action, details, created_at')
-            .order('created_at', { ascending: false })
-            .limit(20),
-          supabase.from('fines').select('amount, status'),
-        ]);
-
-        if (rulesResp.error) throw rulesResp.error;
+        const response = await fetch('/api/admin/settings', { cache: 'no-store' });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error ?? 'Unable to load settings');
         setRules(
-          ensureDefaultRoles((rulesResp.data as CirculationRuleRow[]) ?? [])
+          ensureDefaultRoles((payload.rules as CirculationRuleRow[]) ?? [])
         );
-
-        if (settingsResp.error) throw settingsResp.error;
         setSettings(
-          settingsResp.data
-            ? (settingsResp.data as GlobalSettings)
+          payload.settings
+            ? (payload.settings as GlobalSettings)
             : { maintenance_mode: false, allow_self_registration: true }
         );
-
-        if (logsResp.error) throw logsResp.error;
-        setAuditLogs((logsResp.data as AuditLogRow[]) ?? []);
-
-        if (finesResp.error) throw finesResp.error;
-        const total = (finesResp.data ?? [])
+        setAuditLogs((payload.logs as AuditLogRow[]) ?? []);
+        const total = ((payload.fines as FineRow[] | undefined) ?? [])
           .filter((f) => f.status === 'Unpaid')
           .reduce((sum, f) => sum + (f.amount ?? 0), 0);
         setTotalUnpaidFines(total);
@@ -151,7 +118,7 @@ export default function AdminSettingsPage() {
     };
 
     load();
-  }, [ensureDefaultRoles, supabase]);
+  }, [ensureDefaultRoles]);
 
   React.useEffect(() => {
     if (!loading) return;
@@ -200,16 +167,6 @@ export default function AdminSettingsPage() {
     setRulesMessage(null);
 
     try {
-      if (!supabase) throw new Error('Supabase client not ready yet.');
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        throw new Error('You must be signed in as an admin to update rules.');
-      }
-
       const payload = rules.map((r) => ({
         id: r.id,
         role: r.role,
@@ -221,19 +178,19 @@ export default function AdminSettingsPage() {
         max_fine_amount: r.max_fine_amount,
       }));
 
-      const { error } = await supabase
-        .from('circulation_rules')
-        .upsert(payload, { onConflict: 'role' });
-
-      if (error) throw error;
-
-      // Log admin rule update
-      await logAdminAction(
-        supabase,
-        user.id,
-        'RULE_UPDATE',
-        { updatedRules: payload }
-      );
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rules: payload,
+          settings: {
+            maintenance_mode: settings?.maintenance_mode ?? false,
+            allow_self_registration: settings?.allow_self_registration ?? true,
+          },
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Unable to save rules');
 
       setRulesMessage('Rules updated successfully.');
     } catch (e) {
@@ -250,25 +207,18 @@ export default function AdminSettingsPage() {
 
   const handleToggleSetting = async (key: keyof GlobalSettings) => {
     if (!settings) return;
-    if (!supabase) return;
-
     const next = { ...settings, [key]: !settings[key] };
     setSettings(next);
     setSettingsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('global_settings')
-        .upsert(
-          {
-            id: next.id,
-            maintenance_mode: next.maintenance_mode,
-            allow_self_registration: next.allow_self_registration,
-          },
-          { onConflict: 'id' }
-        );
-
-      if (error) throw error;
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rules, settings: next }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Unable to save setting');
     } catch (e) {
       console.error(e);
       // Revert on error

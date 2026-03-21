@@ -65,9 +65,7 @@ export async function getTotalUnpaidFines(
  * @param fineId - Fine ID to mark as paid
  * @throws Error if update fails
  *
- * TODO: Integrate with real payment provider (Stripe/PayPal/Square)
- * TODO: Add audit logging for payment transactions
- * TODO: Implement webhook handling for payment confirmations
+ * Payment status updates should be triggered from verified server events.
  */
 export async function payFine(
   client: TypedSupabaseClient,

@@ -9,8 +9,6 @@ import { Plus, Search } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import PageHeader from "@/components/PageHeader";
 import { adminNav } from "@/lib/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
-import { getCurrentUser, getUserRole } from "@/services/auth";
 import type { BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +46,6 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 export default function AdminUsersPage() {
-  const [supabase, setSupabase] = React.useState<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [users, setUsers] = React.useState<UserRow[]>([]);
   const [search, setSearch] = React.useState("");
@@ -62,28 +59,17 @@ export default function AdminUsersPage() {
   const [editRole, setEditRole] = React.useState("");
 
   const load = React.useCallback(async () => {
-    if (!supabase) return;
     setLoading(true);
     try {
-      const current = await getCurrentUser(supabase);
-      const role = await getUserRole(supabase, current.id);
-      if (role !== "Admin") {
-        toast.error("Admin access required.");
-        return;
-      }
-
-      const { data, error } = await supabase.from("users").select("id, role").order("role", { ascending: true });
-      if (error) throw new Error(error.message);
-      setUsers((data ?? []).map((u) => ({ id: u.id, role: u.role })));
+      const response = await fetch("/api/admin/users", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Failed to load users.");
+      setUsers((payload.users ?? []).map((u: UserRow) => ({ id: u.id, role: u.role })));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load users.");
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
-
-  React.useEffect(() => {
-    setSupabase(createSupabaseBrowserClient());
   }, []);
 
   React.useEffect(() => {
@@ -104,7 +90,6 @@ export default function AdminUsersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
     const id = newUserId.trim();
     const role = newUserRole.trim();
     if (!id || !role) {
@@ -113,8 +98,13 @@ export default function AdminUsersPage() {
     }
 
     try {
-      const { error } = await supabase.from("users").insert({ id, role });
-      if (error) throw new Error(error.message);
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, role }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Failed to create user.");
       toast.success("User record created.");
       setCreateOpen(false);
       setNewUserId("");
@@ -126,7 +116,7 @@ export default function AdminUsersPage() {
   };
 
   const handleSaveRole = async () => {
-    if (!supabase || !editUser) return;
+    if (!editUser) return;
     const nextRole = editRole.trim();
     if (!nextRole) {
       toast.error("Role is required.");
@@ -134,8 +124,13 @@ export default function AdminUsersPage() {
     }
 
     try {
-      const { error } = await supabase.from("users").update({ role: nextRole }).eq("id", editUser.id);
-      if (error) throw new Error(error.message);
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editUser.id, role: nextRole }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Failed to update role.");
       toast.success("Role updated.");
       setEditOpen(false);
       setEditUser(null);
@@ -168,7 +163,7 @@ export default function AdminUsersPage() {
           />
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          TODO: Emails and full user lifecycle require an admin server route (Supabase Auth admin API) or storing email/name/status in `public.users`.
+          User roles are managed via secured admin API routes.
         </p>
       </div>
 

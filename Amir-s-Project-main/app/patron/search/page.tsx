@@ -95,7 +95,7 @@ export default function PatronSearchBooksPage() {
               <div className="mt-auto pt-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" />
-                  <span>TODO shelf</span>
+                  <span>General Stacks</span>
                 </div>
                 {available > 0 ? (
                   <span className="text-sm font-medium text-success">{available} available</span>

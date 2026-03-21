@@ -14,9 +14,13 @@ export default function LibrarianSubPage() {
     <DashboardLayout items={librarianNav} title="LibraryMS" roleLabel="Librarian">
       <PageHeader title="Librarian" description={path} />
       <div className="glass-card rounded-xl p-6">
-        <p className="text-sm text-muted-foreground">
-          TODO: Port the Library Hub page for <span className="font-medium">{path}</span> and wire to Supabase.
+        <p className="text-sm text-muted-foreground mb-3">
+          This route is available under the librarian workspace. Use the implemented flows for day-to-day operations.
         </p>
+        <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+          <li>`/librarian/add-book` for catalog intake and barcode generation</li>
+          <li>`/librarian` for live dashboard metrics</li>
+        </ul>
       </div>
     </DashboardLayout>
   );

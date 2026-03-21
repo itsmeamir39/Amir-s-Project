@@ -7,11 +7,11 @@
 import type { TypedSupabaseClient } from '@/lib/supabase';
 
 export interface CirculationRule {
-  patron_role: string;
-  max_borrow_limit: number;
+  role: string;
+  borrow_limit: number;
   loan_period_days: number;
   renewal_limit: number;
-  fine_per_day: number;
+  fine_amount_per_day: number;
   max_fine_amount: number;
   grace_period_days: number | null;
 }
@@ -29,9 +29,9 @@ export async function getCirculationRulesByRole(
   const { data, error } = await client
     .from('circulation_rules')
     .select(
-      'patron_role, max_borrow_limit, loan_period_days, renewal_limit, fine_per_day, max_fine_amount, grace_period_days'
+      "role, borrow_limit, loan_period_days, renewal_limit, fine_amount_per_day, max_fine_amount, grace_period_days"
     )
-    .eq('patron_role', patronRole)
+    .eq("role", patronRole)
     .maybeSingle();
 
   if (error) throw new Error(`Failed to fetch circulation rules: ${error.message}`);
@@ -134,18 +134,18 @@ export async function validateReservationAllowed(
   const rule = await getCirculationRulesByRole(client, role);
 
   const { data: engagements, error: engagementsError } = await client
-    .from('engagement')
+    .from('holds')
     .select('id')
     .eq('user_id', userId)
-    .eq('type', 'Reservation');
+    .eq("status", "pending");
 
   if (engagementsError) throw new Error(`Failed to fetch reservations: ${engagementsError.message}`);
 
   const currentReservations = engagements?.length ?? 0;
 
-  if (currentReservations >= rule.renewal_limit) {
+  if (currentReservations >= rule.borrow_limit) {
     throw new Error(
-      `You have reached your reservation limit (${rule.renewal_limit}). Current reservations: ${currentReservations}`
+      `You have reached your reservation limit (${rule.borrow_limit}). Current reservations: ${currentReservations}`
     );
   }
 
@@ -173,5 +173,5 @@ export async function getMaxBorrowLimit(
   const role = userRecord?.role ?? 'Patron';
   const rule = await getCirculationRulesByRole(client, role);
 
-  return rule.max_borrow_limit;
+  return rule.borrow_limit;
 }

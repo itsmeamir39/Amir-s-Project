@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Bell, LogOut, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar, type SidebarNavItem } from "@/components/AppSidebar";
@@ -54,7 +55,11 @@ export default function DashboardLayout({ children, items, title, roleLabel }: D
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-destructive"
-                onClick={() => router.push("/login")}
+                onClick={async () => {
+                  const supabase = createSupabaseBrowserClient();
+                  await supabase.auth.signOut();
+                  router.replace("/login");
+                }}
               >
                 <LogOut className="h-4 w-4" />
               </Button>

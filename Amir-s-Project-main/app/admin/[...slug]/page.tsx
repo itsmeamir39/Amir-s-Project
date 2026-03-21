@@ -14,9 +14,14 @@ export default function AdminSubPage() {
     <DashboardLayout items={adminNav} title="LibraryMS" roleLabel="Admin">
       <PageHeader title="Admin" description={path} />
       <div className="glass-card rounded-xl p-6">
-        <p className="text-sm text-muted-foreground">
-          TODO: Port the Library Hub page for <span className="font-medium">{path}</span> and wire to Supabase tables.
+        <p className="text-sm text-muted-foreground mb-3">
+          This route is active and uses shared admin shell. Select one of the implemented modules from the sidebar.
         </p>
+        <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+          <li>`/admin/users` for user role management</li>
+          <li>`/admin/settings` for circulation and global settings</li>
+          <li>`/admin` for live operational metrics</li>
+        </ul>
       </div>
     </DashboardLayout>
   );

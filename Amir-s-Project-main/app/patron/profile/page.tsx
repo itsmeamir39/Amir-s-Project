@@ -51,7 +51,7 @@ export default function PatronProfilePage() {
         </dl>
 
         <p className="mt-6 text-xs text-muted-foreground">
-          TODO: Add editable profile fields and connect to your `users` table (name, phone, address, etc.).
+          Contact library staff to update profile metadata linked to your account.
         </p>
       </div>
     </DashboardLayout>

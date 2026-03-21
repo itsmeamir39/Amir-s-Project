@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -38,6 +39,25 @@ export default function LoginPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed.");
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setError(null);
+    setInfo(null);
+    if (!email.trim()) {
+      setError("Enter your email first to receive a reset link.");
+      return;
+    }
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (resetError) throw new Error(resetError.message);
+      setInfo("Password reset email sent. Check your inbox.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send reset email.");
     }
   };
 
@@ -77,6 +97,11 @@ export default function LoginPage() {
               {error}
             </div>
           )}
+          {info && (
+            <div className="mb-6 p-3 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm border border-emerald-500/20">
+              {info}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
@@ -102,7 +127,7 @@ export default function LoginPage() {
                 <label htmlFor="password" className="text-sm font-medium text-foreground">
                   Password
                 </label>
-                <button type="button" className="text-xs text-accent hover:underline" disabled>
+                <button type="button" className="text-xs text-accent hover:underline" onClick={handleResetPassword}>
                   Forgot password?
                 </button>
               </div>
@@ -138,9 +163,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-muted-foreground">
-            TODO: Implement password reset flow and role assignment UX (currently comes from `users.role` in Supabase).
-          </p>
+          <p className="mt-8 text-center text-xs text-muted-foreground">Role assignment comes from `public.users.role`.</p>
         </div>
       </div>
     </div>
